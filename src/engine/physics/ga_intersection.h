@@ -30,6 +30,13 @@ struct ga_collision_info
 	float _penetration;
 };
 
+struct ga_raycast_hit_info
+{
+	ga_vec3f _point;
+	ga_vec3f _normal;
+	ga_rigid_body* _collider;
+};
+
 /*
 ** Compute the distance from a point in 3d space to a plane.
 */

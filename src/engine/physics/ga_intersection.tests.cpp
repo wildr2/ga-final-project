@@ -84,4 +84,28 @@ void ga_intersection_unit_tests()
 		collision = separating_axis_test(&oobb_a, trans_a, &oobb_b, trans_b, &info);
 		assert(!collision);
 	}
+
+	// Test OOBB Raycast
+	{
+		ga_oobb oobb_a;
+		oobb_a._center = { 0.0f, 0.0f, 0.0f };
+		oobb_a._half_vectors[0] = { 1.0f, 0.0f, 0.0f };
+		oobb_a._half_vectors[1] = { 0.0f, 1.0f, 0.0f };
+		oobb_a._half_vectors[2] = { 0.0f, 0.0f, 1.0f };
+
+		float dist;
+		bool hit = false;
+
+		hit = oobb_a.intersects_ray({ 10, 0, 0 }, { -1, 0, 0 }, &dist);
+		assert(hit);
+
+		/*hit = oobb_a.intersects_ray({ 10, 0, 0 }, { 1, 0, 0 }, &dist);
+		assert(!hit);*/
+		
+		hit = oobb_a.intersects_ray({ 10, 3, 0 }, { -1, 0, 0 }, &dist);
+		assert(!hit);
+
+		hit = oobb_a.intersects_ray({ 10, 0, 0 }, { 1, 1, 0 }, &dist);
+		assert(!hit);
+	}
 }

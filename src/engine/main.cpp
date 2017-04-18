@@ -79,7 +79,7 @@ int main(int argc, const char** argv)
 	set_root_path(argv[0]);
 	ga_job::startup(0xffff, 256, 256);
 
-	//run_unit_tests();
+	run_unit_tests();
 
 	// Create objects for three phases of the frame: input, sim and output.
 	ga_input* input = new ga_input();
@@ -123,7 +123,7 @@ int main(int argc, const char** argv)
 
 	// Audio Source 1
 	SoLoud::Wav sfx_drums;
-	int ret = sfx_drums.load("drums.wav");
+	sfx_drums.load("drums.wav");
 	ga_entity source;
 	ga_audio_component audio_comp(&source, &audioEngine, &sfx_drums);
 	ga_kb_move_component source_move_comp(&source, k_button_k, k_button_j, k_button_i, k_button_l);
@@ -132,6 +132,18 @@ int main(int argc, const char** argv)
 	source_transform.translate({ -6, 1, 0 });
 	source.set_transform(source_transform);
 	sim->add_entity(&source);
+
+	// Audio Source 2
+	SoLoud::Wav sfx_flute;
+	sfx_flute.load("flute.wav");
+	ga_entity source2;
+	ga_audio_component audio_comp2(&source2, &audioEngine, &sfx_flute);
+	//ga_kb_move_component source_move_comp(&source, k_button_k, k_button_j, k_button_i, k_button_l);
+	ga_mat4f source2_transform;
+	source2_transform.make_identity();
+	source2_transform.translate({ 5, 2, 0 });
+	source2.set_transform(source2_transform);
+	sim->add_entity(&source2);
 
 	// Floor
 	ga_entity floor;

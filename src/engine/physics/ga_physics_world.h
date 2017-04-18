@@ -10,6 +10,7 @@
 */
 
 #include "math/ga_vec3f.h"
+#include "ga_intersection.h"
 
 #include <atomic>
 #include <vector>
@@ -47,5 +48,8 @@ private:
 
 	void test_intersections(ga_frame_params* params);
 
+	void raycast_all(const ga_vec3f& ray_origin, const ga_vec3f& ray_dir, std::vector<ga_raycast_hit_info>* hit_info);
+
 	void resolve_collision(ga_rigid_body* body_a, ga_rigid_body* body_b, ga_collision_info* info);
 };
+

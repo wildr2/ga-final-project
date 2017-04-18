@@ -8,7 +8,6 @@
 */
 
 #include "ga_physics_world.h"
-#include "ga_intersection.h"
 #include "ga_rigid_body.h"
 #include "ga_shape.h"
 
@@ -137,6 +136,21 @@ void ga_physics_world::test_intersections(ga_frame_params* params)
 					resolve_collision(_bodies[i], _bodies[j], &info);
 				}
 			}
+		}
+	}
+}
+
+void ga_physics_world::raycast_all(const ga_vec3f& ray_origin, const ga_vec3f& ray_dir, std::vector<ga_raycast_hit_info>* hit_info)
+{
+	for (int i = 0; i < _bodies.size(); ++i)
+	{
+		ga_shape* shape = _bodies[i]->_shape;
+		float t = 0;
+		if (shape->intersects_ray(ray_origin, ray_dir, &t))
+		{
+			ga_raycast_hit_info info;
+			info._collider = _bodies[i];
+			hit_info->push_back(info);
 		}
 	}
 }

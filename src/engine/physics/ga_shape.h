@@ -58,6 +58,15 @@ struct ga_shape
 	** Returns the vector from the center of mass to the point in space.
 	*/
 	virtual ga_vec3f get_offset_to_point(const ga_mat4f& transform, const ga_vec3f& point) const = 0;
+
+	/*
+	** Returns whether the specified ray intersects the shape. The value of dist is set to t along the
+		ray that the intersection occured.
+	*/
+	virtual bool intersects_ray(const ga_vec3f& ray_origin, const ga_vec3f& ray_dir, float* dist)
+	{
+		return false;
+	}
 };
 
 /*
@@ -86,6 +95,7 @@ struct ga_oobb final : ga_shape
 	ga_shape_t get_type() const override { return k_shape_oobb; }
 	void get_debug_draw(const ga_mat4f& transform, struct ga_dynamic_drawcall* drawcall) override;
 	void get_inertia_tensor(ga_mat4f& tensor, float mass) override;
+	bool intersects_ray(const ga_vec3f& ray_origin, const ga_vec3f& ray_dir, float* dist) override;
 	ga_vec3f get_offset_to_point(const ga_mat4f& transform, const ga_vec3f& point) const override;
 
 	void get_corners(std::vector<ga_vec3f>& corners) const;

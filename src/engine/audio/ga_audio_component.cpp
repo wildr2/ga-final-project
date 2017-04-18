@@ -17,7 +17,7 @@ ga_audio_component::ga_audio_component(ga_entity* ent, SoLoud::Soloud* audioEngi
 	_audioEngine = audioEngine;
 
 	wav->setLooping(true);
-	wav->set3dMinMaxDistance(1, 10);
+	wav->set3dMinMaxDistance(1, 20);
 	wav->set3dAttenuation(SoLoud::AudioSource::LINEAR_DISTANCE, 1);
 
 	_audioHandle = audioEngine->play3d(*wav, 0, 0, 0);
