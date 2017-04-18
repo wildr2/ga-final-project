@@ -26,17 +26,6 @@ void ga_listener_component::update(ga_frame_params* params)
 {	
 	float dt = std::chrono::duration_cast<std::chrono::duration<float>>(params->_delta_time).count();
 
-	// Keyboard movement
-	ga_vec3f moveDir = { 0, 0, 0 };
-	moveDir.x =
-		params->_button_mask & k_button_j ? -1 :
-		params->_button_mask & k_button_l ? 1 : 0;
-	moveDir.z =
-		params->_button_mask & k_button_k ? 1 :
-		params->_button_mask & k_button_i ? -1 : 0;
-
-	get_entity()->translate(moveDir.scale_result(5.0f * dt));
-
 	// Sound
 	update3DAudio();
 

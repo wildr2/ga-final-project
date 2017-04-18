@@ -18,6 +18,7 @@
 
 #include "audio/ga_audio_component.h"
 #include "audio/ga_listener_component.h"
+#include "util/ga_kb_move_component.h"
 #include "graphics/ga_cube_component.h"
 #include "graphics/ga_program.h"
 
@@ -113,17 +114,19 @@ int main(int argc, const char** argv)
 	// Listener
 	ga_entity listener;
 	ga_listener_component listener_comp(&listener, &audioEngine);
+	ga_kb_move_component listener_move_comp(&listener, k_button_g, k_button_f, k_button_t, k_button_h);
 	ga_mat4f listener_transform;
 	listener_transform.make_identity();
 	listener_transform.translate({ -7, 1, 0 });
 	listener.set_transform(listener_transform);
 	sim->add_entity(&listener);
 
-	// Audio Source
+	// Audio Source 1
 	SoLoud::Wav sfx_drums;
 	int ret = sfx_drums.load("drums.wav");
 	ga_entity source;
 	ga_audio_component audio_comp(&source, &audioEngine, &sfx_drums);
+	ga_kb_move_component source_move_comp(&source, k_button_k, k_button_j, k_button_i, k_button_l);
 	ga_mat4f source_transform;
 	source_transform.make_identity();
 	source_transform.translate({ -6, 1, 0 });
