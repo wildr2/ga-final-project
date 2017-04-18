@@ -9,4 +9,5 @@
 ** This file is distributed under the MIT License. See LICENSE.txt.
 */
 
-void draw_debug_sphere(float radius, const struct ga_mat4f& transform, struct ga_dynamic_drawcall* drawcall);
+void draw_debug_sphere(float radius, const struct ga_mat4f& transform, struct ga_dynamic_drawcall* drawcall,
+	const struct ga_vec3f& color);

@@ -18,19 +18,16 @@
 /*
 ** Component which drives animation; updates skeleton and skinning matrices.
 */
-class ga_audio_component : public ga_component
+class ga_listener_component : public ga_component
 {
 public:
-	ga_audio_component(class ga_entity* ent, SoLoud::Soloud* audioEngine, SoLoud::Wav* wav);
-	virtual ~ga_audio_component();
+	ga_listener_component(class ga_entity* ent, SoLoud::Soloud* audioEngine);
+	virtual ~ga_listener_component();
 
 	virtual void update(struct ga_frame_params* params) override;
 
 private:
-
 	void update3DAudio();
 
 	SoLoud::Soloud* _audioEngine;
-	int _audioHandle;
-	
 };

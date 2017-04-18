@@ -18,7 +18,8 @@
 
 #include <vector>
 
-void draw_debug_sphere(float radius, const ga_mat4f& transform, ga_dynamic_drawcall* drawcall)
+void draw_debug_sphere(float radius, const ga_mat4f& transform, ga_dynamic_drawcall* drawcall, 
+	const struct ga_vec3f& color)
 {
 	// Represent the sphere with a circle around each axis.
 	std::vector<ga_vec3f> axes;
@@ -60,6 +61,6 @@ void draw_debug_sphere(float radius, const ga_mat4f& transform, ga_dynamic_drawc
 	}
 
 	drawcall->_draw_mode = GL_LINES;
-	drawcall->_color = { 1.0f, 0.0f, 0.0f };
+	drawcall->_color = color;
 	drawcall->_transform = transform;
 }
