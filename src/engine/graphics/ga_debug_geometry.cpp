@@ -64,3 +64,16 @@ void draw_debug_sphere(float radius, const ga_mat4f& transform, ga_dynamic_drawc
 	drawcall->_color = color;
 	drawcall->_transform = transform;
 }
+
+void draw_debug_line(const struct ga_vec3f& p1, const struct ga_vec3f& p2, ga_dynamic_drawcall* drawcall,
+	const struct ga_vec3f& color)
+{
+	drawcall->_positions.push_back(p1);
+	drawcall->_positions.push_back(p2);
+	drawcall->_indices.push_back((uint16_t)0);
+	drawcall->_indices.push_back((uint16_t)1);
+
+	drawcall->_draw_mode = GL_LINES;
+	drawcall->_color = color;
+	drawcall->_transform.make_identity();
+}

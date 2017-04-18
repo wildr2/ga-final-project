@@ -31,11 +31,15 @@ void ga_listener_component::update(ga_frame_params* params)
 
 	// Visualization
 #if DEBUG_DRAW_AUDIO_SOURCES
-	ga_dynamic_drawcall drawcall;
-	draw_debug_sphere(0.2f, get_entity()->get_transform(), &drawcall, { 0.4f, 0.549f, 1 });
+	ga_mat4f tran = get_entity()->get_transform();
+
+	ga_dynamic_drawcall loc_drawcall, ray_drawcall;
+	draw_debug_sphere(0.2f, tran, &loc_drawcall, { 0.4f, 0.549f, 1 });
+	draw_debug_line(tran.get_translation(), { 0, 0, 0 }, &ray_drawcall, { 0, 1, 0 });
 
 	while (params->_dynamic_drawcall_lock.test_and_set(std::memory_order_acquire)) {}
-	params->_dynamic_drawcalls.push_back(drawcall);
+	params->_dynamic_drawcalls.push_back(loc_drawcall);
+	params->_dynamic_drawcalls.push_back(ray_drawcall);
 	params->_dynamic_drawcall_lock.clear(std::memory_order_release);
 #endif
 }

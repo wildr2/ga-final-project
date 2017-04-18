@@ -105,10 +105,20 @@ int main(int argc, const char** argv)
 	// Cube
 	ga_entity cube;
 	ga_cube_component model(&cube, "data/textures/rpi.png");
+	
 	ga_mat4f cube_transform;
 	cube_transform.make_scaling(2);
-	cube_transform.translate({ 0, 2, 0 });
+	cube_transform.translate({ 0, 1, 0 });
 	cube.set_transform(cube_transform);
+
+	ga_oobb cube_oobb;
+	cube_oobb._half_vectors[0] = ga_vec3f::x_vector();
+	cube_oobb._half_vectors[1] = ga_vec3f::y_vector();
+	cube_oobb._half_vectors[2] = ga_vec3f::z_vector();
+	ga_physics_component cube_collider(&cube, &cube_oobb, 1.0f);
+	cube_collider.get_rigid_body()->make_static();
+	world->add_rigid_body(cube_collider.get_rigid_body());
+
 	sim->add_entity(&cube);
 
 	// Listener
