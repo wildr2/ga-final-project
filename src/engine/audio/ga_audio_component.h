@@ -10,6 +10,8 @@
 */
 
 #include "entity/ga_component.h"
+#include "soloud.h"
+#include "soloud_wav.h"
 
 #define DEBUG_DRAW_AUDIO_SOURCES 1
 
@@ -19,11 +21,16 @@
 class ga_audio_component : public ga_component
 {
 public:
-	ga_audio_component(class ga_entity* ent);
+	ga_audio_component(class ga_entity* ent, SoLoud::Soloud* audioEngine, SoLoud::Wav* wav);
 	virtual ~ga_audio_component();
 
 	virtual void update(struct ga_frame_params* params) override;
 
 private:
+
+	void update3DSound();
+
+	SoLoud::Soloud* _audioEngine;
+	int _audioHandle;
 	
 };

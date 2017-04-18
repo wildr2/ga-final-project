@@ -26,6 +26,8 @@
 #include "physics/ga_rigid_body.h"
 #include "physics/ga_shape.h"
 
+#include "soloud.h"
+
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
@@ -39,41 +41,40 @@
 static void set_root_path(const char* exepath);
 static void run_unit_tests();
 
-void create_scene(ga_sim* sim, ga_physics_world* world)
+void create_scene(ga_sim* sim, ga_physics_world* world, SoLoud::Soloud audioEngine)
 {
-	// Cube
-	ga_entity cube;
-	ga_cube_component model(&cube, "data/textures/rpi.png");
-	ga_mat4f cube_transform;
-	cube_transform.make_scaling(2);
-	cube_transform.translate({ 0, 2, 0 });
-	cube.set_transform(cube_transform);
-	sim->add_entity(&cube);
+	//// Cube
+	//ga_entity cube;
+	//ga_cube_component model(&cube, "data/textures/rpi.png");
+	//ga_mat4f cube_transform;
+	//cube_transform.make_scaling(2);
+	//cube_transform.translate({ 0, 2, 0 });
+	//cube.set_transform(cube_transform);
+	//sim->add_entity(&cube);
 
-	// Audio Source
-	ga_entity speaker;
-	ga_audio_component audio_comp(&speaker);
-	ga_mat4f spkr_transform;
-	spkr_transform.make_identity();
-	spkr_transform.translate({ -6, 1, 0 });
-	speaker.set_transform(spkr_transform);
-	sim->add_entity(&speaker);
+	//// Audio Source
+	//ga_entity speaker;
+	//ga_audio_component audio_comp(&speaker, &audioEngine);
+	//ga_mat4f spkr_transform;
+	//spkr_transform.make_identity();
+	//spkr_transform.translate({ -6, 1, 0 });
+	//speaker.set_transform(spkr_transform);
+	//sim->add_entity(&speaker);
 
-	// Floor
-	ga_entity floor;
-	ga_plane floor_plane;
-	floor_plane._point = { 0.0f, 0.0f, 0.0f };
-	floor_plane._normal = { 0.0f, 1.0f, 0.0f };
-	ga_physics_component floor_collider(&floor, &floor_plane, 0.0f);
-	floor_collider.get_rigid_body()->make_static();
-	world->add_rigid_body(floor_collider.get_rigid_body());
-	sim->add_entity(&floor);
+	//// Floor
+	//ga_entity floor;
+	//ga_plane floor_plane;
+	//floor_plane._point = { 0.0f, 0.0f, 0.0f };
+	//floor_plane._normal = { 0.0f, 1.0f, 0.0f };
+	//ga_physics_component floor_collider(&floor, &floor_plane, 0.0f);
+	//floor_collider.get_rigid_body()->make_static();
+	//world->add_rigid_body(floor_collider.get_rigid_body());
+	//sim->add_entity(&floor);
 }
 
 int main(int argc, const char** argv)
 {
 	set_root_path(argv[0]);
-
 	ga_job::startup(0xffff, 256, 256);
 
 	//run_unit_tests();
@@ -92,6 +93,10 @@ int main(int argc, const char** argv)
 	rotation.make_axis_angle(ga_vec3f::x_vector(), ga_degrees_to_radians(15.0f));
 	camera->rotate(rotation);
 
+	// Audio Engine
+	SoLoud::Soloud audioEngine;
+	audioEngine.init();
+
 	// Scene
 	//create_scene(sim, world);
 
@@ -105,8 +110,10 @@ int main(int argc, const char** argv)
 	sim->add_entity(&cube);
 
 	// Audio Source
+	SoLoud::Wav sfx_drums;
+	int ret = sfx_drums.load("drums.wav");
 	ga_entity speaker;
-	ga_audio_component audio_comp(&speaker);
+	ga_audio_component audio_comp(&speaker, &audioEngine, &sfx_drums);
 	ga_mat4f spkr_transform;
 	spkr_transform.make_identity();
 	spkr_transform.translate({ -6, 1, 0 });
