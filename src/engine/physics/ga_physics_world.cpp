@@ -19,23 +19,27 @@
 #include <ctime>
 
 typedef bool (*intersection_func_t)(const ga_shape* a, const ga_mat4f& transform_a, const ga_shape* b, const ga_mat4f& transform_b, ga_collision_info* info);
+typedef bool (*intersect_ray_func_t)(const ga_vec3f& ray_origin, const ga_vec3f& ray_dir, const ga_shape* shape, const ga_mat4f& transform, float* dist);
 
 static intersection_func_t k_dispatch_table[k_shape_count][k_shape_count];
+static intersect_ray_func_t k_ray_dispatch_table[k_shape_count];
 
 ga_physics_world::ga_physics_world()
 {
-	// Clear the dispatch table.
+	// Clear the dispatch tables.
 	for (int i = 0; i < k_shape_count; ++i)
 	{
 		for (int j = 0; j < k_shape_count; ++j)
 		{
 			k_dispatch_table[i][j] = intersection_unimplemented;
 		}
+		k_ray_dispatch_table[i] = ray_intersection_unimplemented;
 	}
 
 	k_dispatch_table[k_shape_oobb][k_shape_oobb] = separating_axis_test;
 	k_dispatch_table[k_shape_plane][k_shape_oobb] = oobb_vs_plane;
 	k_dispatch_table[k_shape_oobb][k_shape_plane] = oobb_vs_plane;
+	k_ray_dispatch_table[k_shape_oobb] = ray_vs_oobb;
 
 	// Default gravity to Earth's constant.
 	_gravity = { 0.0f, -9.807f, 0.0f };
@@ -140,19 +144,23 @@ void ga_physics_world::test_intersections(ga_frame_params* params)
 	}
 }
 
-void ga_physics_world::raycast_all(const ga_vec3f& ray_origin, const ga_vec3f& ray_dir, std::vector<ga_raycast_hit_info>* hit_info)
+bool ga_physics_world::raycast_all(const ga_vec3f& ray_origin, const ga_vec3f& ray_dir, std::vector<ga_raycast_hit_info>* hit_info)
 {
+	bool hit = false;
 	for (int i = 0; i < _bodies.size(); ++i)
 	{
 		ga_shape* shape = _bodies[i]->_shape;
 		float t = 0;
-		if (shape->intersects_ray(ray_origin, ray_dir, &t))
+		intersect_ray_func_t func = k_ray_dispatch_table[shape->get_type()];
+		if (func(ray_origin, ray_dir, shape, _bodies[i]->_transform, &t))
 		{
 			ga_raycast_hit_info info;
 			info._collider = _bodies[i];
 			hit_info->push_back(info);
+			hit = true;
 		}
 	}
+	return hit;
 }
 
 void ga_physics_world::step_linear_dynamics(ga_frame_params* params, ga_rigid_body* body)

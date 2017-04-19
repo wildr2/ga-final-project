@@ -375,3 +375,104 @@ bool separating_axis_test(const ga_shape* a, const ga_mat4f& transform_a, const 
 
 	return collision;
 }
+
+
+bool ray_intersection_unimplemented(const ga_vec3f & ray_origin, const ga_vec3f & ray_dir,
+	const ga_shape* shape, const ga_mat4f& transform, float * dist)
+{
+	return false;
+}
+
+bool ray_vs_oobb(const ga_vec3f& ray_origin, const ga_vec3f& ray_dir,
+	const ga_shape* shape, const ga_mat4f& transform, float* dist)
+{
+	ga_oobb oobb = *reinterpret_cast<const ga_oobb*>(shape);
+	ga_mat4f inv_tran = transform.inverse();
+	ga_vec3f O = inv_tran.transform_point(ray_origin);
+	ga_vec3f D = inv_tran.transform_vector(ray_dir);
+
+	ga_vec3f min = oobb._center - oobb._half_vectors[0] - oobb._half_vectors[1] - oobb._half_vectors[2];
+	ga_vec3f max = oobb._center + oobb._half_vectors[0] + oobb._half_vectors[1] + oobb._half_vectors[2];
+
+	float tmin = (min.x - O.x) / D.x;
+	float tmax = (max.x - O.x) / D.x;
+	float tymin = (min.y - O.y) / D.y;
+	float tymax = (max.y - O.y) / D.y;
+	float tzmin = (min.z - O.z) / D.z;
+	float tzmax = (max.z - O.z) / D.z;
+
+	ga_vec3f ptmin = O + D.scale_result(tmin);
+	ga_vec3f ptmax = O + D.scale_result(tmax);
+	ga_vec3f ptymin = O + D.scale_result(tymin);
+	ga_vec3f ptymax = O + D.scale_result(tymax);
+	ga_vec3f ptzmin = O + D.scale_result(tzmin);
+	ga_vec3f ptzmax = O + D.scale_result(tzmax);
+
+	float t = -1;
+
+	if (tmin > 0 && point_in_rect(ptmin.y, ptmin.z, min.y, min.z, max.y, max.z))
+		t = tmin < t || t < 0 ? tmin : t;
+	if (tmax > 0 && point_in_rect(ptmax.y, ptmax.z, min.y, min.z, max.y, max.z))
+		t = tmax < t || t < 0 ? tmax : t;
+	if (tymin > 0 && point_in_rect(ptymin.x, ptymin.z, min.x, min.z, max.x, max.z))
+		t = tymin < t || t < 0 ? tymin : t;
+	if (tymax > 0 && point_in_rect(ptymax.x, ptymax.z, min.x, min.z, max.x, max.z))
+		t = tymax < t || t < 0 ? tymax : t;
+	if (tzmin > 0 && point_in_rect(ptzmin.x, ptzmin.y, min.x, min.y, max.x, max.y))
+		t = tzmin < t || t < 0 ? tzmin : t;
+	if (tzmax > 0 && point_in_rect(ptzmax.x, ptzmin.y, min.x, min.y, max.x, max.y))
+		t = tzmax < t || t < 0 ? tzmax : t;
+	
+	if (t >= 0)
+	{
+		*dist = t;
+		return true;
+	}
+	return false;
+
+	/*ga_oobb oobb = *reinterpret_cast<const ga_oobb*>(shape);
+	oobb._center += transform.get_translation();
+	oobb._half_vectors[0] = transform.transform_vector(oobb._half_vectors[0]);
+	oobb._half_vectors[1] = transform.transform_vector(oobb._half_vectors[1]);
+	oobb._half_vectors[2] = transform.transform_vector(oobb._half_vectors[2]);
+
+	ga_vec3f min = oobb._center - oobb._half_vectors[0] - oobb._half_vectors[1] - oobb._half_vectors[2];
+	ga_vec3f max = oobb._center + oobb._half_vectors[0] + oobb._half_vectors[1] + oobb._half_vectors[2];
+
+	float tmin = (min.x - ray_origin.x) / ray_dir.x;
+	float tmax = (max.x - ray_origin.x) / ray_dir.x;
+
+	if (tmin > tmax) std::swap(tmin, tmax);
+
+	float tymin = (min.y - ray_origin.y) / ray_dir.y;
+	float tymax = (max.y - ray_origin.y) / ray_dir.y;
+
+	if (tymin > tymax) std::swap(tymin, tymax);
+
+	if ((tmin > tymax) || (tymin > tmax))
+		return false;
+
+	if (tymin > tmin) tmin = tymin;
+	if (tymax < tmax) tmax = tymax;
+
+	float tzmin = (min.z - ray_origin.z) / ray_dir.z;
+	float tzmax = (max.z - ray_origin.z) / ray_dir.z;
+
+	if (tzmin > tzmax) std::swap(tzmin, tzmax);
+
+	if ((tmin > tzmax) || (tzmin > tmax))
+		return false;
+
+	if (tzmin > tmin) tmin = tzmin;
+	if (tzmax < tmax) tmax = tzmax;
+
+	if (tmin < 0 && tmax < 0 && tymin < 0 && tymax < 0 && tzmin < 0 && tzmax < 0)
+		return false;
+
+	return true;*/
+}
+
+bool point_in_rect(float x, float y, float minx, float miny, float maxx, float maxy)
+{
+	return x >= minx && x <= maxx && y >= miny && y <= maxy;
+}

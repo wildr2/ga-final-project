@@ -108,7 +108,7 @@ int main(int argc, const char** argv)
 	
 	ga_mat4f cube_transform;
 	cube_transform.make_scaling(2);
-	cube_transform.translate({ 0, 1, 0 });
+	cube_transform.translate({ 0, 0, 1 });
 	cube.set_transform(cube_transform);
 
 	ga_oobb cube_oobb;
@@ -122,26 +122,27 @@ int main(int argc, const char** argv)
 	sim->add_entity(&cube);
 
 	// Listener
-	ga_entity listener;
-	ga_listener_component listener_comp(&listener, &audioEngine);
-	ga_kb_move_component listener_move_comp(&listener, k_button_g, k_button_f, k_button_t, k_button_h);
+	ga_entity listener_ent;
+	ga_listener_component listener(&listener_ent, &audioEngine, world);
+	ga_kb_move_component listener_move_comp(&listener_ent, k_button_k, k_button_j, k_button_i, k_button_l);
 	ga_mat4f listener_transform;
 	listener_transform.make_identity();
-	listener_transform.translate({ -7, 1, 0 });
-	listener.set_transform(listener_transform);
-	sim->add_entity(&listener);
+	listener_transform.translate({ -7, 0.5f, 0 });
+	listener_ent.set_transform(listener_transform);
+	sim->add_entity(&listener_ent);
 
 	// Audio Source 1
 	SoLoud::Wav sfx_drums;
 	sfx_drums.load("drums.wav");
 	ga_entity source;
 	ga_audio_component audio_comp(&source, &audioEngine, &sfx_drums);
-	ga_kb_move_component source_move_comp(&source, k_button_k, k_button_j, k_button_i, k_button_l);
+	ga_kb_move_component source_move_comp(&source, k_button_g, k_button_f, k_button_t, k_button_h);
 	ga_mat4f source_transform;
 	source_transform.make_identity();
-	source_transform.translate({ -6, 1, 0 });
+	source_transform.translate({ -6, 0.5f, 0 });
 	source.set_transform(source_transform);
 	sim->add_entity(&source);
+	listener.registerAudioSource(&audio_comp);
 
 	// Audio Source 2
 	SoLoud::Wav sfx_flute;
@@ -151,9 +152,10 @@ int main(int argc, const char** argv)
 	//ga_kb_move_component source_move_comp(&source, k_button_k, k_button_j, k_button_i, k_button_l);
 	ga_mat4f source2_transform;
 	source2_transform.make_identity();
-	source2_transform.translate({ 5, 2, 0 });
+	source2_transform.translate({ 5, 0.5f, 0 });
 	source2.set_transform(source2_transform);
 	sim->add_entity(&source2);
+	listener.registerAudioSource(&audio_comp2);
 
 	// Floor
 	ga_entity floor;

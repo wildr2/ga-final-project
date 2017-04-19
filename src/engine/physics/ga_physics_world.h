@@ -36,6 +36,7 @@ public:
 	void remove_all_rigid_bodies();
 
 	void step(ga_frame_params* params);
+	bool raycast_all(const ga_vec3f& ray_origin, const ga_vec3f& ray_dir, std::vector<ga_raycast_hit_info>* hit_info);
 
 private:
 	std::vector<ga_rigid_body*> _bodies;
@@ -47,8 +48,6 @@ private:
 	void step_angular_dynamics(ga_frame_params* params, ga_rigid_body* body);
 
 	void test_intersections(ga_frame_params* params);
-
-	void raycast_all(const ga_vec3f& ray_origin, const ga_vec3f& ray_dir, std::vector<ga_raycast_hit_info>* hit_info);
 
 	void resolve_collision(ga_rigid_body* body_a, ga_rigid_body* body_b, ga_collision_info* info);
 };

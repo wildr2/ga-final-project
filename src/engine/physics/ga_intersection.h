@@ -78,3 +78,20 @@ bool oobb_vs_plane(const ga_shape* a, const ga_mat4f& transform_a, const ga_shap
 ** Check for a collision between two oriented bounding boxes.
 */
 bool separating_axis_test(const ga_shape* a, const ga_mat4f& transform_a, const ga_shape* b, const ga_mat4f& transform_b, ga_collision_info* info);
+
+
+/*
+** Stub function for unimplemented ray intersection algorithms.
+*/
+bool ray_intersection_unimplemented(const ga_vec3f & ray_origin, const ga_vec3f & ray_dir,
+	const ga_shape* shape, const ga_mat4f& transform, float * dist);
+
+/*
+** Check for intersection between a ray and an oriented bounding box. 
+** Dist is set to t along the ray at which the intersection occured.
+*/
+bool ray_vs_oobb(const ga_vec3f & ray_origin, const ga_vec3f & ray_dir,
+	const ga_shape* shape, const ga_mat4f& transform, float * dist);
+
+
+bool point_in_rect(float x, float y, float minx, float miny, float maxx, float maxy);

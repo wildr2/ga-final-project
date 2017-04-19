@@ -131,40 +131,6 @@ void ga_oobb::get_inertia_tensor(ga_mat4f& tensor, float mass)
 	tensor.data[2][2] = one_over_twelve * mass * (width2 + height2);
 }
 
-bool ga_oobb::intersects_ray(const ga_vec3f & ray_origin, const ga_vec3f & ray_dir, float* dist)
-{
-	ga_vec3f min = _center - _half_vectors[0] - _half_vectors[1] - _half_vectors[2];
-	ga_vec3f max = _center + _half_vectors[0] + _half_vectors[1] + _half_vectors[2];
-	
-	float tmin = (min.x - ray_origin.x) / ray_dir.x;
-	float tmax = (max.x - ray_origin.x) / ray_dir.x;
-
-	if (tmin > tmax) std::swap(tmin, tmax);
-
-	float tymin = (min.y - ray_origin.y) / ray_dir.y;
-	float tymax = (max.y - ray_origin.y) / ray_dir.y;
-
-	if (tymin > tymax) std::swap(tymin, tymax);
-
-	if ((tmin > tymax) || (tymin > tmax))
-		return false;
-
-	if (tymin > tmin) tmin = tymin;
-	if (tymax < tmax) tmax = tymax;
-
-	float tzmin = (min.z - ray_origin.z) / ray_dir.z;
-	float tzmax = (max.z - ray_origin.z) / ray_dir.z;
-
-	if (tzmin > tzmax) std::swap(tzmin, tzmax);
-
-	if ((tmin > tzmax) || (tzmin > tmax))
-		return false;
-
-	if (tzmin > tmin) tmin = tzmin;
-	if (tzmax < tmax) tmax = tzmax;
-
-	return true;
-}
 
 ga_vec3f ga_oobb::get_offset_to_point(const ga_mat4f& transform, const ga_vec3f& point) const
 {

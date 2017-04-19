@@ -93,19 +93,22 @@ void ga_intersection_unit_tests()
 		oobb_a._half_vectors[1] = { 0.0f, 1.0f, 0.0f };
 		oobb_a._half_vectors[2] = { 0.0f, 0.0f, 1.0f };
 
+		ga_mat4f trans_a;
+		trans_a.make_identity();
+
 		float dist;
 		bool hit = false;
-
-		hit = oobb_a.intersects_ray({ 10, 0, 0 }, { -1, 0, 0 }, &dist);
+		
+		hit = ray_vs_oobb({ 10, 0, 0 }, { -1, 0.01f, 0 }, &oobb_a, trans_a, &dist);
 		assert(hit);
 
-		/*hit = oobb_a.intersects_ray({ 10, 0, 0 }, { 1, 0, 0 }, &dist);
-		assert(!hit);*/
+		hit = ray_vs_oobb({ 10, 0, 0 }, { 1, 0.01f, 0 }, &oobb_a, trans_a, &dist);
+		assert(!hit);
 		
-		hit = oobb_a.intersects_ray({ 10, 3, 0 }, { -1, 0, 0 }, &dist);
+		hit = ray_vs_oobb({ 10, 2, 0 }, { -1, 0.01f, 0 }, &oobb_a, trans_a, &dist);
 		assert(!hit);
 
-		hit = oobb_a.intersects_ray({ 10, 0, 0 }, { 1, 1, 0 }, &dist);
+		hit = ray_vs_oobb({ 10, 0, 0 }, { 1, 1, 0 }, &oobb_a, trans_a, &dist);
 		assert(!hit);
 	}
 }
