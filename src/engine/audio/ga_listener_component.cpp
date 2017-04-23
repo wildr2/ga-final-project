@@ -33,15 +33,36 @@ void ga_listener_component::update(ga_frame_params* params)
 	// Source occlusion
 	for (int i = 0; i < _sources.size(); ++i)
 	{
+		// Determine if occluded
 		ga_vec3f source_pos = _sources[i]->get_entity()->get_transform().get_translation();
-		std::vector<ga_raycast_hit_info> info;
-		bool hit = _world->raycast_all(pos, source_pos - pos, &info);
+		ga_vec3f to_source = source_pos - pos;
+		float dist_to_source = to_source.mag();
 
-		// Show raycast
+		std::vector<ga_raycast_hit_info> info;
+		_world->raycast_all(pos, to_source.normal(), &info);
+		bool occluded = false;
+		for (int j = 0; j < info.size(); ++j)
+		{
+			if (info[j]._dist <= dist_to_source)
+			{
+				occluded = true;
+				break;
+			}
+		}
+
+		// Adjust volume
+		int handle = _sources[i]->getAudioHandle();
+		float vol = _audioEngine->getVolume(handle);
+		vol = occluded ? 0 : 1;
+		_audioEngine->setVolume(handle, vol);
+		
+		
+		
+		// Visualize raycast
 #if DEBUG_DRAW_AUDIO_SOURCES
 		ga_dynamic_drawcall drawcall;
 		ga_vec3f color = { 0, 1, 0 };
-		if (hit) color = { 1, 0, 0 };
+		if (occluded) color = { 1, 0, 0 };
 		draw_debug_line(pos, source_pos, &drawcall, color);
 		drawcalls.push_back(drawcall);
 #endif
