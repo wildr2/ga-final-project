@@ -18,6 +18,27 @@ ga_listener_component::ga_listener_component(ga_entity* ent, SoLoud::Soloud* aud
 	_world = world;
 	_audioEngine = audioEngine;
 	update3DAudio();
+
+	// Nodes
+	std::vector<ga_vec3f> positions = world->getMeshCorners();
+	for (int i = 0; i < positions.size(); ++i)
+	{
+		_sound_nodes.push_back(sound_node(positions[i]));
+	}
+
+	// Edges
+	for (int i = 0; i < _sound_nodes.size(); ++i)
+	{
+		for (int j = i+1; j < _sound_nodes.size(); ++j)
+		{
+			ga_vec3f v = _sound_nodes[j]._pos - _sound_nodes[i]._pos;
+			if (!_world->raycast_all(_sound_nodes[i]._pos, v.normal(), NULL, v.mag()))
+			{
+				_sound_nodes[i]._neighbors.push_back(&_sound_nodes[j]);
+				_sound_nodes[j]._neighbors.push_back(&_sound_nodes[i]);
+			}
+		}
+	}
 }
 
 ga_listener_component::~ga_listener_component()
@@ -57,9 +78,8 @@ void ga_listener_component::update(ga_frame_params* params)
 		_audioEngine->setVolume(handle, vol);
 		
 		
-		
-		// Visualize raycast
 #if DEBUG_DRAW_AUDIO_SOURCES
+		// Visualize raycast
 		ga_dynamic_drawcall drawcall;
 		ga_vec3f color = { 0, 1, 0 };
 		if (occluded) color = { 1, 0, 0 };
@@ -70,12 +90,28 @@ void ga_listener_component::update(ga_frame_params* params)
 
 	// Udpate panning / distance attenuation
 	update3DAudio();
-
-	// Visualize listener
+	
 #if DEBUG_DRAW_AUDIO_SOURCES
+	// Visualize listener
 	ga_dynamic_drawcall drawcall;
 	draw_debug_sphere(0.2f, get_entity()->get_transform(), &drawcall, { 0.4f, 0.549f, 1 });
 	drawcalls.push_back(drawcall);
+
+	// Visualize sound nodes
+	ga_audio_component* vis_source = _sources[0];
+	for (int i = 0; i < _sound_nodes.size(); ++i)
+	{
+		float dist_from_source = _sound_nodes[i]._propogation[vis_source];
+		float str = 1.0f / (1 + dist_from_source / 2.0f);
+		ga_vec3f color = { str, 0, 1 - str };
+
+		for (int j = 0; j < _sound_nodes[i]._neighbors.size(); ++j)
+		{
+			ga_dynamic_drawcall drawcall;
+			draw_debug_line(_sound_nodes[i]._pos, _sound_nodes[i]._neighbors[j]->_pos, &drawcall, color);
+			drawcalls.push_back(drawcall);
+		}
+	}
 #endif
 
 	// Draw
@@ -93,6 +129,7 @@ void ga_listener_component::update(ga_frame_params* params)
 void ga_listener_component::registerAudioSource(ga_audio_component* source)
 {
 	_sources.push_back(source);
+	_sound_nodes[0].propogate(source, 0);
 }
 
 void ga_listener_component::update3DAudio()
@@ -107,3 +144,40 @@ void ga_listener_component::update3DAudio()
 	_audioEngine->update3dAudio();
 }
 
+
+
+void sound_node::propogate(ga_audio_component* source, float initial_dist)
+{
+	std::queue<std::pair<sound_node*, float>> open_list;
+	open_list.push(std::pair<sound_node*, float>(this, initial_dist));
+
+	while (open_list.size() > 0)
+	{
+		sound_node* node = open_list.front().first;
+		float dist = open_list.front().second;
+		open_list.pop();
+
+		// If node has not already been visited
+		if (node->_propogation.count(source) == 0)
+		{
+			node->_propogation[source] = dist;
+			for (int i = 0; i < node->_neighbors.size(); ++i)
+			{
+				float dist_to_neighbor = (_neighbors[i]->_pos - node->_pos).mag();
+				open_list.push(std::pair<sound_node*, float>(
+					node->_neighbors[i],
+					dist + dist_to_neighbor));
+			}
+		}		
+	}
+
+
+	/*if (itr == _propogation.end() || itr->second > dist)
+	{
+		_propogation[source] = dist;
+		for (int i = 0; i < _neighbors.size(); ++i)
+		{
+			_neighbors[i].propogate(source, dist + (_neighbors[i]._pos - _pos).mag());
+		}
+	}*/
+}

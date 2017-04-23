@@ -144,7 +144,8 @@ void ga_physics_world::test_intersections(ga_frame_params* params)
 	}
 }
 
-bool ga_physics_world::raycast_all(const ga_vec3f& ray_origin, const ga_vec3f& ray_dir, std::vector<ga_raycast_hit_info>* hit_info)
+bool ga_physics_world::raycast_all(const ga_vec3f& ray_origin, const ga_vec3f& ray_dir,
+	std::vector<ga_raycast_hit_info>* hit_info, float max_dist)
 {
 	bool hit = false;
 	for (int i = 0; i < _bodies.size(); ++i)
@@ -152,17 +153,43 @@ bool ga_physics_world::raycast_all(const ga_vec3f& ray_origin, const ga_vec3f& r
 		ga_shape* shape = _bodies[i]->_shape;
 		float t = 0;
 		intersect_ray_func_t func = k_ray_dispatch_table[shape->get_type()];
-		if (func(ray_origin, ray_dir, shape, _bodies[i]->_transform, &t))
+		if (func(ray_origin, ray_dir, shape, _bodies[i]->_transform, &t) &&
+			t < max_dist)
 		{
-			ga_raycast_hit_info info;
-			info._collider = _bodies[i];
-			info._dist = t;
-			info._point = ray_origin + ray_dir.scale_result(t);
-			hit_info->push_back(info);
+			if (hit_info != NULL)
+			{
+				ga_raycast_hit_info info;
+				info._collider = _bodies[i];
+				hit_info->push_back(info);
+			}
 			hit = true;
 		}
 	}
 	return hit;
+}
+
+std::vector<ga_vec3f> ga_physics_world::getMeshCorners()
+{
+	std::vector<ga_vec3f> out;
+
+	for (int i = 0; i < _bodies.size(); ++i)
+	{
+		ga_rigid_body* rb = _bodies[i];
+		ga_shape* shape = rb->_shape;
+		ga_oobb* cube = (ga_oobb*)shape;
+		if (cube != NULL)
+		{
+			std::vector<ga_vec3f> corners;
+			cube->get_corners(corners);
+			for (int j = 0; j < corners.size(); ++j)
+			{
+				ga_vec3f pos = corners[j] + (corners[j] - cube->_center).normal().scale_result(0.1f);
+				pos = rb->_transform.transform_point(pos);
+				out.push_back(pos);
+			}
+		}
+	}
+	return out;
 }
 
 void ga_physics_world::step_linear_dynamics(ga_frame_params* params, ga_rigid_body* body)
@@ -265,3 +292,4 @@ void ga_physics_world::resolve_collision(ga_rigid_body* body_a, ga_rigid_body* b
 		body_b->_velocity = v2 + a2;
 	}
 }
+

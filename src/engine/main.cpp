@@ -43,35 +43,67 @@
 static void set_root_path(const char* exepath);
 static void run_unit_tests();
 
-void create_scene(ga_sim* sim, ga_physics_world* world, SoLoud::Soloud audioEngine)
+void setup_scene_audio(ga_sim* sim, ga_physics_world* world, SoLoud::Soloud* audioEngine)
 {
-	//// Cube
-	//ga_entity cube;
-	//ga_cube_component model(&cube, "data/textures/rpi.png");
-	//ga_mat4f cube_transform;
-	//cube_transform.make_scaling(2);
-	//cube_transform.translate({ 0, 2, 0 });
-	//cube.set_transform(cube_transform);
-	//sim->add_entity(&cube);
+	// Listener
+	ga_entity* listener_ent = new ga_entity();
+	ga_listener_component* listener = new ga_listener_component(listener_ent, audioEngine, world);
+	ga_kb_move_component* listener_move_comp = new ga_kb_move_component(
+		listener_ent, k_button_k, k_button_j, k_button_i, k_button_l);
+	ga_mat4f*  listener_transform = new ga_mat4f();
+	listener_transform->make_identity();
+	listener_transform->translate({ -7, 0.5f, 0 });
+	listener_ent->set_transform(*listener_transform);
+	sim->add_entity(listener_ent);
 
-	//// Audio Source
-	//ga_entity speaker;
-	//ga_audio_component audio_comp(&speaker, &audioEngine);
-	//ga_mat4f spkr_transform;
-	//spkr_transform.make_identity();
-	//spkr_transform.translate({ -6, 1, 0 });
-	//speaker.set_transform(spkr_transform);
-	//sim->add_entity(&speaker);
+	// Audio Source 1
+	SoLoud::Wav* sfx_drums = new SoLoud::Wav();
+	sfx_drums->load("drums.wav");
+	ga_entity* source = new ga_entity();
+	ga_audio_component* audio_comp = new ga_audio_component(source, audioEngine, sfx_drums);
+	ga_kb_move_component* source_move_comp = new ga_kb_move_component(
+		source, k_button_g, k_button_f, k_button_t, k_button_h);
 
-	//// Floor
-	//ga_entity floor;
-	//ga_plane floor_plane;
-	//floor_plane._point = { 0.0f, 0.0f, 0.0f };
-	//floor_plane._normal = { 0.0f, 1.0f, 0.0f };
-	//ga_physics_component floor_collider(&floor, &floor_plane, 0.0f);
-	//floor_collider.get_rigid_body()->make_static();
-	//world->add_rigid_body(floor_collider.get_rigid_body());
-	//sim->add_entity(&floor);
+	ga_mat4f* source_transform = new ga_mat4f();
+	source_transform->make_identity();
+	source_transform->translate({ -6, 0.5f, 0 });
+	source->set_transform(*source_transform);
+	sim->add_entity(source);
+	listener->registerAudioSource(audio_comp);
+
+	// Audio Source 2
+	/*SoLoud::Wav sfx_flute;
+	sfx_flute.load("flute.wav");
+	ga_entity source2;
+	ga_audio_component audio_comp2(&source2, &audioEngine, &sfx_flute);
+	ga_mat4f source2_transform;
+	source2_transform.make_identity();
+	source2_transform.translate({ 5, 0.5f, 0 });
+	source2.set_transform(source2_transform);
+	sim->add_entity(&source2);
+	listener.registerAudioSource(&audio_comp2);*/
+}
+
+ga_entity* create_cube(ga_sim* sim, ga_physics_world* world)
+{
+	ga_entity* cube = new ga_entity();
+	ga_cube_component* model = new ga_cube_component(cube, "data/textures/wall.png");
+
+	ga_mat4f* cube_transform = new ga_mat4f();
+	cube_transform->make_scaling(1);
+	cube_transform->translate({ 0, 1, 0 });
+	cube->set_transform(*cube_transform);
+
+	ga_oobb* cube_oobb = new ga_oobb();
+	cube_oobb->_half_vectors[0] = ga_vec3f::x_vector();
+	cube_oobb->_half_vectors[1] = ga_vec3f::y_vector();
+	cube_oobb->_half_vectors[2] = ga_vec3f::z_vector();
+	ga_physics_component* collider = new ga_physics_component(cube, cube_oobb, 1.0f);
+	collider->get_rigid_body()->make_static();
+	world->add_rigid_body(collider->get_rigid_body());
+
+	sim->add_entity(cube);
+	return cube;
 }
 
 int main(int argc, const char** argv)
@@ -100,71 +132,20 @@ int main(int argc, const char** argv)
 	audioEngine.init();
 
 	// Scene
-	//create_scene(sim, world);
+	ga_entity* cube = create_cube(sim, world);
+	setup_scene_audio(sim, world, &audioEngine);
 
-	// Cube
-	ga_entity cube;
-	ga_cube_component model(&cube, "data/textures/wall.png");
 	
-	ga_mat4f cube_transform;
-	cube_transform.make_scaling(1);
-	cube_transform.translate({ 0, 1, 0 });
-	cube.set_transform(cube_transform);
-
-	ga_oobb cube_oobb;
-	cube_oobb._half_vectors[0] = ga_vec3f::x_vector();
-	cube_oobb._half_vectors[1] = ga_vec3f::y_vector();
-	cube_oobb._half_vectors[2] = ga_vec3f::z_vector();
-	ga_physics_component cube_collider(&cube, &cube_oobb, 1.0f);
-	cube_collider.get_rigid_body()->make_static();
-	world->add_rigid_body(cube_collider.get_rigid_body());
-
-	sim->add_entity(&cube);
-
-	// Listener
-	ga_entity listener_ent;
-	ga_listener_component listener(&listener_ent, &audioEngine, world);
-	ga_kb_move_component listener_move_comp(&listener_ent, k_button_k, k_button_j, k_button_i, k_button_l);
-	ga_mat4f listener_transform;
-	listener_transform.make_identity();
-	listener_transform.translate({ -7, 0.5f, 0 });
-	listener_ent.set_transform(listener_transform);
-	sim->add_entity(&listener_ent);
-
-	// Audio Source 1
-	SoLoud::Wav sfx_drums;
-	sfx_drums.load("drums.wav");
-	ga_entity source;
-	ga_audio_component audio_comp(&source, &audioEngine, &sfx_drums);
-	ga_kb_move_component source_move_comp(&source, k_button_g, k_button_f, k_button_t, k_button_h);
-	ga_mat4f source_transform;
-	source_transform.make_identity();
-	source_transform.translate({ -6, 0.5f, 0 });
-	source.set_transform(source_transform);
-	sim->add_entity(&source);
-	listener.registerAudioSource(&audio_comp);
-
-	// Audio Source 2
-	SoLoud::Wav sfx_flute;
-	sfx_flute.load("flute.wav");
-	ga_entity source2;
-	ga_audio_component audio_comp2(&source2, &audioEngine, &sfx_flute);
-	ga_mat4f source2_transform;
-	source2_transform.make_identity();
-	source2_transform.translate({ 5, 0.5f, 0 });
-	source2.set_transform(source2_transform);
-	sim->add_entity(&source2);
-	listener.registerAudioSource(&audio_comp2);
 
 	// Floor
-	ga_entity floor;
+	/*ga_entity floor;
 	ga_plane floor_plane;
 	floor_plane._point = { 0.0f, 0.0f, 0.0f };
 	floor_plane._normal = { 0.0f, 1.0f, 0.0f };
 	ga_physics_component floor_collider(&floor, &floor_plane, 0.0f);
 	floor_collider.get_rigid_body()->make_static();
 	world->add_rigid_body(floor_collider.get_rigid_body());
-	sim->add_entity(&floor);
+	sim->add_entity(&floor);*/
 
 
 	// Main loop:

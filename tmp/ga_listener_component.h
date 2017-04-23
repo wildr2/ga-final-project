@@ -47,7 +47,6 @@ public:
 private:
 	void update3DAudio();
 
-	void addSoundNode(const ga_vec3f & pos);
 
 	SoLoud::Soloud* _audioEngine;
 	ga_physics_world* _world;

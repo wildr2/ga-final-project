@@ -15,7 +15,25 @@
 #include "soloud.h"
 #include "soloud_wav.h"
 
+#include <map>
+#include <queue>
+
 #define DEBUG_DRAW_AUDIO_SOURCES 1
+
+class sound_node
+{
+public:
+	sound_node(ga_vec3f pos)
+	{
+		_pos = pos;
+	}
+
+	void propogate(ga_audio_component* source, float dist);
+
+	ga_vec3f _pos;
+	std::vector<sound_node*> _neighbors;
+	std::map<ga_audio_component*, float> _propogation;
+};
 
 /*
 ** Component which drives animation; updates skeleton and skinning matrices.
@@ -36,4 +54,5 @@ private:
 	SoLoud::Soloud* _audioEngine;
 	ga_physics_world* _world;
 	std::vector<ga_audio_component*> _sources; 
+	std::vector<sound_node> _sound_nodes;
 };
