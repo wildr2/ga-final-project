@@ -104,11 +104,11 @@ int main(int argc, const char** argv)
 
 	// Cube
 	ga_entity cube;
-	ga_cube_component model(&cube, "data/textures/rpi.png");
+	ga_cube_component model(&cube, "data/textures/wall.png");
 	
 	ga_mat4f cube_transform;
-	cube_transform.make_scaling(2);
-	cube_transform.translate({ 0, 0, 1 });
+	cube_transform.make_scaling(1);
+	cube_transform.translate({ 0, 1, 0 });
 	cube.set_transform(cube_transform);
 
 	ga_oobb cube_oobb;
@@ -149,7 +149,6 @@ int main(int argc, const char** argv)
 	sfx_flute.load("flute.wav");
 	ga_entity source2;
 	ga_audio_component audio_comp2(&source2, &audioEngine, &sfx_flute);
-	//ga_kb_move_component source_move_comp(&source, k_button_k, k_button_j, k_button_i, k_button_l);
 	ga_mat4f source2_transform;
 	source2_transform.make_identity();
 	source2_transform.translate({ 5, 0.5f, 0 });
