@@ -156,6 +156,8 @@ bool ga_physics_world::raycast_all(const ga_vec3f& ray_origin, const ga_vec3f& r
 		{
 			ga_raycast_hit_info info;
 			info._collider = _bodies[i];
+			info._dist = t;
+			info._point = ray_origin + ray_dir.scale_result(t);
 			hit_info->push_back(info);
 			hit = true;
 		}

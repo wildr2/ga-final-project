@@ -32,6 +32,7 @@ struct ga_collision_info
 
 struct ga_raycast_hit_info
 {
+	float _dist;
 	ga_vec3f _point;
 	ga_vec3f _normal;
 	ga_rigid_body* _collider;

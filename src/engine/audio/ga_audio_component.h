@@ -24,6 +24,8 @@ public:
 	ga_audio_component(class ga_entity* ent, SoLoud::Soloud* audioEngine, SoLoud::Wav* wav);
 	virtual ~ga_audio_component();
 
+	int getAudioHandle() { return _audioHandle; }
+
 	virtual void update(struct ga_frame_params* params) override;
 
 private:

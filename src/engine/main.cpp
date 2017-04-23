@@ -108,7 +108,7 @@ int main(int argc, const char** argv)
 	
 	ga_mat4f cube_transform;
 	cube_transform.make_scaling(2);
-	cube_transform.translate({ 0, 0, 1 });
+	cube_transform.translate({ 0, 1, 0 });
 	cube.set_transform(cube_transform);
 
 	ga_oobb cube_oobb;
