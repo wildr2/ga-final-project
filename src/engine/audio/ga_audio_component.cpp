@@ -8,6 +8,7 @@
 */
 
 #include "ga_audio_component.h"
+#include "ga_listener_component.h"
 #include "graphics/ga_debug_geometry.h"
 #include "graphics/ga_geometry.h"
 #include "entity/ga_entity.h"
@@ -17,7 +18,7 @@ ga_audio_component::ga_audio_component(ga_entity* ent, SoLoud::Soloud* audioEngi
 	_audioEngine = audioEngine;
 
 	wav->setLooping(true);
-	wav->set3dMinMaxDistance(1, 20);
+	wav->set3dMinMaxDistance(1, MAX_AUDIO_DIST);
 	wav->set3dAttenuation(SoLoud::AudioSource::LINEAR_DISTANCE, 1);
 
 	_audioHandle = audioEngine->play3d(*wav, 0, 0, 0);
@@ -41,7 +42,7 @@ void ga_audio_component::update(ga_frame_params* params)
 	float dt = std::chrono::duration_cast<std::chrono::duration<float>>(params->_delta_time).count();
 
 	// Sound
-	update3DAudio();
+	//update3DAudio();
 
 	// Visualization
 #if DEBUG_DRAW_AUDIO

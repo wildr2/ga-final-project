@@ -22,7 +22,7 @@ ga_listener_component::ga_listener_component(ga_entity* ent, SoLoud::Soloud* aud
 
 	// Nodes
 	std::vector<ga_vec3f> corners = world->getMeshCorners();
-	std::vector<ga_vec3f> apart_corners = world->getMeshCorners(0.25f);
+	std::vector<ga_vec3f> apart_corners = world->getMeshCorners(0.05f);
 	std::unordered_map<ga_vec3f, ga_vec3f> corner_to_apart_corner;
 	std::unordered_map<ga_vec3f, int> corner_count;
 	
@@ -34,7 +34,8 @@ ga_listener_component::ga_listener_component(ga_entity* ent, SoLoud::Soloud* aud
 	std::unordered_map<ga_vec3f, int>::iterator itr;
 	for (itr = corner_count.begin(); itr != corner_count.end(); ++itr)
 	{
-		if (itr->second == 1)
+		// Create nodes for outer mesh corners (only one vertex at that location)
+		if (itr->second > 0)
 		{
 			ga_vec3f node_pos = corner_to_apart_corner[itr->first];
 			_sound_nodes.push_back(sound_node(_sound_nodes.size(), node_pos));
@@ -74,23 +75,58 @@ void ga_listener_component::update(ga_frame_params* params)
 		// Determine if occluded
 		ga_vec3f source_pos = _sources[i]->get_entity()->get_transform().get_translation();
 		ga_vec3f to_source = source_pos - pos;
-		float dist_to_source = to_source.mag();
+		bool occluded = _world->raycast_all(pos, to_source.normal(), NULL, to_source.mag());
 
-		std::vector<ga_raycast_hit_info> info;
-		bool occluded = _world->raycast_all(pos, to_source.normal(), &info, dist_to_source);
-
-		// Adjust volume
+		// Set source position (virtual source position if occluded)
 		int handle = _sources[i]->getAudioHandle();
-		float vol = _audioEngine->getVolume(handle);
-		vol = occluded ? 0 : 1;
-		_audioEngine->setVolume(handle, vol);
+		if (occluded)
+		{
+			ga_vec3f virtual_source = { MAX_AUDIO_DIST, MAX_AUDIO_DIST, MAX_AUDIO_DIST };
+			float min_dist = MAX_AUDIO_DIST;
+			for (int j = 0; j < _visible_sound_nodes.size(); ++j)
+			{
+				ga_vec3f node_to_listener = _visible_sound_nodes[j]->_pos - pos;
+				float dist_from_source = _visible_sound_nodes[j]->_propogation[_sources[i]] +
+					node_to_listener.mag();
+
+				if (dist_from_source < min_dist)
+				{
+					min_dist = dist_from_source;
+					virtual_source = pos + node_to_listener.normal()
+						.scale_result(dist_from_source);
+				}
+			}
+
+			// Use virtual source position
+			_audioEngine->set3dSourcePosition(handle,
+				virtual_source.x, virtual_source.y, virtual_source.z);
+
+#if DEBUG_DRAW_AUDIO
+			if (_visible_sound_nodes.size() > 0)
+			{
+				// Visualize node los
+				ga_dynamic_drawcall drawcall;
+				float str = (min_dist - MAX_AUDIO_DIST) / -MAX_AUDIO_DIST;
+				ga_vec3f color = { 1 - str, str, 0 };
+				draw_debug_line(pos, virtual_source, &drawcall, color);
+				drawcalls.push_back(drawcall);
+			}
+#endif
+		}
+		else // Not Occluded
+		{
+			// Use actual source position
+			_audioEngine->set3dSourcePosition(handle,
+				source_pos.x, source_pos.y, source_pos.z);
+		}
+		
 		
 		
 #if DEBUG_DRAW_AUDIO
 		// Visualize raycast
 		ga_dynamic_drawcall drawcall;
-		ga_vec3f color = { 0, 1, 0 };
-		if (occluded) color = { 1, 0, 0 };
+		float str = occluded ? 0 : ((source_pos-pos).mag() - MAX_AUDIO_DIST) / -MAX_AUDIO_DIST;
+		ga_vec3f color = { 1 - str, str, 0 };
 		draw_debug_line(pos, source_pos, &drawcall, color);
 		drawcalls.push_back(drawcall);
 #endif
@@ -119,7 +155,7 @@ void ga_listener_component::update(ga_frame_params* params)
 
 		// Determine color of node:
 		//	 Greater distance from the sound source to visualize -> more blue
-		float str = 1.0f / (1 + dist_from_source / 2.0f);
+		float str = (dist_from_source - MAX_AUDIO_DIST) / -MAX_AUDIO_DIST;
 		ga_vec3f color = { 1 - str, str, 0 };
 
 		ga_dynamic_drawcall drawcall;
@@ -158,7 +194,7 @@ void ga_listener_component::update(ga_frame_params* params)
 
 			// Determine color of line to neighboring nodes based:
 			// Greater distance from the sound source to visualize -> more blue
-			float str = 1.0f / (1 + dist_from_source / 2.0f);
+			float str = (dist_from_source - MAX_AUDIO_DIST) / -MAX_AUDIO_DIST;
 			ga_vec3f color = { 1 - str, str, 0 };
 
 			ga_dynamic_drawcall drawcall;
@@ -198,7 +234,7 @@ void ga_listener_component::registerAudioSource(ga_audio_component* source)
 		if (!_world->raycast_all(source_pos, v.normal(), NULL, dist))
 		{
 			// Sound node in LOS
-			_sound_nodes[i].propogate(source, 0);
+			_sound_nodes[i].propogate(source, dist);
 		}
 	}
 }
@@ -218,23 +254,16 @@ void ga_listener_component::update3DAudio()
 void ga_listener_component::update_visible_sound_nodes(const ga_vec3f& pos,
 	std::vector<ga_dynamic_drawcall>& drawcalls)
 {
+	_visible_sound_nodes.clear();
+
 	// Find visible sound nodes
 	for (int i = 0; i < _sound_nodes.size(); ++i)
 	{
-		_visible_sound_nodes.clear();
-
 		ga_vec3f v = _sound_nodes[i]._pos - pos;
 		if (!_world->raycast_all(pos, v.normal(), NULL, v.mag()))
 		{
 			// Sound node in LOS
 			_visible_sound_nodes.push_back(&_sound_nodes[i]);
-
-#if DEBUG_DRAW_AUDIO
-			// Visualize raycast
-			ga_dynamic_drawcall drawcall;
-			draw_debug_line(pos, _sound_nodes[i]._pos, &drawcall, { 0.4f, 0.549f, 1 });
-			drawcalls.push_back(drawcall);
-#endif
 		}
 	}
 }
