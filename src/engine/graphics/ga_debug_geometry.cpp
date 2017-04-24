@@ -77,3 +77,28 @@ void draw_debug_line(const struct ga_vec3f& p1, const struct ga_vec3f& p2, ga_dy
 	drawcall->_color = color;
 	drawcall->_transform.make_identity();
 }
+
+void draw_debug_star(float size, const struct ga_vec3f& position, ga_dynamic_drawcall* drawcall,
+	const struct ga_vec3f& color)
+{
+	ga_vec3f x = { size, 0, 0 };
+	ga_vec3f y = { 0, size, 0 };
+	ga_vec3f z = { 0, 0, size };
+
+	drawcall->_positions.push_back(position - x);
+	drawcall->_positions.push_back(position + x);
+	drawcall->_positions.push_back(position - y);
+	drawcall->_positions.push_back(position + y);
+	drawcall->_positions.push_back(position - z);
+	drawcall->_positions.push_back(position + z);
+	drawcall->_indices.push_back((uint16_t)0);
+	drawcall->_indices.push_back((uint16_t)1);
+	drawcall->_indices.push_back((uint16_t)2);
+	drawcall->_indices.push_back((uint16_t)3);
+	drawcall->_indices.push_back((uint16_t)4);
+	drawcall->_indices.push_back((uint16_t)5);
+
+	drawcall->_draw_mode = GL_LINES;
+	drawcall->_color = color;
+	drawcall->_transform.make_identity();
+}

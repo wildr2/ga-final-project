@@ -66,7 +66,7 @@ void setup_scene_audio(ga_sim* sim, ga_physics_world* world, SoLoud::Soloud* aud
 
 	ga_mat4f* source_transform = new ga_mat4f();
 	source_transform->make_identity();
-	source_transform->translate({ -6, 0.5f, 0 });
+	source_transform->translate({ 3, 0.5f, 0 });
 	source->set_transform(*source_transform);
 	sim->add_entity(source);
 	listener->registerAudioSource(audio_comp);
@@ -84,15 +84,12 @@ void setup_scene_audio(ga_sim* sim, ga_physics_world* world, SoLoud::Soloud* aud
 	listener.registerAudioSource(&audio_comp2);*/
 }
 
-ga_entity* create_cube(ga_sim* sim, ga_physics_world* world)
+ga_entity* create_cube(ga_mat4f* transform, ga_sim* sim, ga_physics_world* world)
 {
 	ga_entity* cube = new ga_entity();
-	ga_cube_component* model = new ga_cube_component(cube, "data/textures/wall.png");
+	ga_cube_component* model = new ga_cube_component(cube, "data/textures/wall3.jpg");
 
-	ga_mat4f* cube_transform = new ga_mat4f();
-	cube_transform->make_scaling(1);
-	cube_transform->translate({ 0, 1, 0 });
-	cube->set_transform(*cube_transform);
+	cube->set_transform(*transform);
 
 	ga_oobb* cube_oobb = new ga_oobb();
 	cube_oobb->_half_vectors[0] = ga_vec3f::x_vector();
@@ -132,7 +129,59 @@ int main(int argc, const char** argv)
 	audioEngine.init();
 
 	// Scene
-	ga_entity* cube = create_cube(sim, world);
+	ga_mat4f tran;
+
+	for (int i = 0; i < 3; ++i) {
+		tran.make_scaling(1);
+		tran.translate({ 0, i * 2.0f, 0 });
+		create_cube(&tran, sim, world);
+
+		tran.make_scaling(1);
+		tran.translate({ 0, i * 2.0f, 2 });
+		create_cube(&tran, sim, world);
+
+		tran.make_scaling(1);
+		tran.translate({ 0, i * 2.0f, 4 });
+		create_cube(&tran, sim, world);
+
+		tran.make_scaling(1);
+		tran.translate({ 0, i * 2.0f, 6 });
+		create_cube(&tran, sim, world);
+
+		tran.make_scaling(1);
+		tran.translate({ 0, i * 2.0f, 8 });
+		create_cube(&tran, sim, world);
+
+		tran.make_scaling(1);
+		tran.translate({ 0, i * 2.0f, 10 });
+		create_cube(&tran, sim, world);
+
+		tran.make_scaling(1);
+		tran.translate({ 2, i * 2.0f, 8 });
+		create_cube(&tran, sim, world);
+	}
+
+	tran.make_scaling(1);
+	tran.translate({ 4, 0, 8 });
+	create_cube(&tran, sim, world);
+
+	tran.make_scaling(1);
+	tran.translate({ 6, 0, 8 });
+	create_cube(&tran, sim, world);
+
+	/*tran.make_scaling(1);
+	tran.translate({ 2, 0, 2 });
+	create_cube(&tran, sim, world);
+
+	tran.make_scaling(1);
+	tran.translate({ 2, 0, 4 });
+	create_cube(&tran, sim, world);
+
+	tran.make_scaling(1);
+	tran.translate({ 0, 0, 4 });
+	create_cube(&tran, sim, world);*/
+
+
 	setup_scene_audio(sim, world, &audioEngine);
 
 	

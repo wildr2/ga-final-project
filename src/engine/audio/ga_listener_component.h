@@ -17,19 +17,22 @@
 
 #include <map>
 #include <queue>
+#include <unordered_set>
 
 #define DEBUG_DRAW_AUDIO_SOURCES 1
 
 class sound_node
 {
 public:
-	sound_node(ga_vec3f pos)
+	sound_node(int id, ga_vec3f pos)
 	{
+		_id = id;
 		_pos = pos;
 	}
 
 	void propogate(ga_audio_component* source, float dist);
 
+	int _id;
 	ga_vec3f _pos;
 	std::vector<sound_node*> _neighbors;
 	std::map<ga_audio_component*, float> _propogation;

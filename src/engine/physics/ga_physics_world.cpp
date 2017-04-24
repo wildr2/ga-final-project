@@ -183,7 +183,7 @@ std::vector<ga_vec3f> ga_physics_world::getMeshCorners()
 			cube->get_corners(corners);
 			for (int j = 0; j < corners.size(); ++j)
 			{
-				ga_vec3f pos = corners[j] + (corners[j] - cube->_center).normal().scale_result(0.1f);
+				ga_vec3f pos = corners[j];// +(corners[j] - cube->_center).normal().scale_result(0.25f);
 				pos = rb->_transform.transform_point(pos);
 				out.push_back(pos);
 			}

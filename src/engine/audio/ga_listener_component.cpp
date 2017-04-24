@@ -12,6 +12,7 @@
 #include "graphics/ga_geometry.h"
 #include "entity/ga_entity.h"
 
+
 ga_listener_component::ga_listener_component(ga_entity* ent, SoLoud::Soloud* audioEngine,
 	ga_physics_world* world) : ga_component(ent)
 {
@@ -23,7 +24,7 @@ ga_listener_component::ga_listener_component(ga_entity* ent, SoLoud::Soloud* aud
 	std::vector<ga_vec3f> positions = world->getMeshCorners();
 	for (int i = 0; i < positions.size(); ++i)
 	{
-		_sound_nodes.push_back(sound_node(positions[i]));
+		_sound_nodes.push_back(sound_node(i, positions[i]));
 	}
 
 	// Edges
@@ -99,19 +100,59 @@ void ga_listener_component::update(ga_frame_params* params)
 
 	// Visualize sound nodes
 	ga_audio_component* vis_source = _sources[0];
+	/*bool* visited = new bool[_sound_nodes.size()];
 	for (int i = 0; i < _sound_nodes.size(); ++i)
 	{
-		float dist_from_source = _sound_nodes[i]._propogation[vis_source];
-		float str = 1.0f / (1 + dist_from_source / 2.0f);
-		ga_vec3f color = { str, 0, 1 - str };
+		visited[i] = false;
+	}*/
 
-		for (int j = 0; j < _sound_nodes[i]._neighbors.size(); ++j)
-		{
-			ga_dynamic_drawcall drawcall;
-			draw_debug_line(_sound_nodes[i]._pos, _sound_nodes[i]._neighbors[j]->_pos, &drawcall, color);
-			drawcalls.push_back(drawcall);
-		}
+	for (int i = 0; i < _sound_nodes.size(); ++i)
+	{
+		// Find distance from source for node1
+		std::map<ga_audio_component*, float>::iterator itr;
+		itr = _sound_nodes[i]._propogation.find(vis_source);
+		float dist_from_source = itr == _sound_nodes[i]._propogation.end() ?
+			std::numeric_limits<float>::max() : itr->second;
+
+		// Determine color of node:
+		//	 Greater distance from the sound source to visualize -> more blue
+		float str = 1.0f / (1 + dist_from_source / 2.0f);
+		ga_vec3f color = { 1 - str, str, 0 };
+
+		ga_dynamic_drawcall drawcall;
+		//ga_mat4f transform;
+		//transform.make_translation(_sound_nodes[i]._pos);
+		draw_debug_star(0.1f, _sound_nodes[i]._pos, &drawcall, color);
+		drawcalls.push_back(drawcall);
+
+
+		//// Draw lines to neighboring nodes
+		//for (int j = 0; j < _sound_nodes[i]._neighbors.size(); ++j)
+		//{
+		//	sound_node* endpoint = _sound_nodes[i]._neighbors[j];
+		//	if (visited[endpoint->_id]) continue;
+
+		//	// Find distance from source for node2
+		//	std::map<ga_audio_component*, float>::iterator itr2;
+		//	itr2 = endpoint->_propogation.find(vis_source);
+		//	
+		//	if (itr2 != endpoint->_propogation.end())
+		//	{
+		//		dist_from_source = std::min(dist_from_source, itr2->second);
+		//	}
+		//	
+		//	// Determine color of line to neighboring nodes based:
+		//	// Greater distance from the sound source to visualize -> more blue
+		//	float str = 1.0f / (1 + dist_from_source / 2.0f);
+		//	ga_vec3f color = { 0, str, 1 - str };
+
+		//	ga_dynamic_drawcall drawcall;
+		//	draw_debug_line(_sound_nodes[i]._pos, endpoint->_pos, &drawcall, color);
+		//	drawcalls.push_back(drawcall);
+		//}
+		//visited[_sound_nodes[i]._id] = true;
 	}
+
 #endif
 
 	// Draw
@@ -129,7 +170,22 @@ void ga_listener_component::update(ga_frame_params* params)
 void ga_listener_component::registerAudioSource(ga_audio_component* source)
 {
 	_sources.push_back(source);
-	_sound_nodes[0].propogate(source, 0);
+
+	ga_vec3f source_pos = source->get_entity()->get_transform().get_translation();
+
+	// Find sound nodes in LOS of source,
+	//   and calculate distance from source at connected sound nodes.
+	for (int i = 0; i < _sound_nodes.size(); ++i)
+	{
+		ga_vec3f v = _sound_nodes[i]._pos - source_pos;
+		float dist = v.mag();
+
+		if (!_world->raycast_all(source_pos, v.normal(), NULL, dist))
+		{
+			// Sound node in LOS
+			_sound_nodes[i].propogate(source, 0);
+		}
+	}
 }
 
 void ga_listener_component::update3DAudio()
@@ -158,12 +214,13 @@ void sound_node::propogate(ga_audio_component* source, float initial_dist)
 		open_list.pop();
 
 		// If node has not already been visited
-		if (node->_propogation.count(source) == 0)
+		if (node->_propogation.count(source) == 0 ||
+			node->_propogation[source] > dist)
 		{
 			node->_propogation[source] = dist;
 			for (int i = 0; i < node->_neighbors.size(); ++i)
 			{
-				float dist_to_neighbor = (_neighbors[i]->_pos - node->_pos).mag();
+				float dist_to_neighbor = (node->_neighbors[i]->_pos - node->_pos).mag();
 				open_list.push(std::pair<sound_node*, float>(
 					node->_neighbors[i],
 					dist + dist_to_neighbor));
