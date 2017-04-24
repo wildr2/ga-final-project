@@ -36,12 +36,43 @@
 #define STB_TRUETYPE_IMPLEMENTATION
 #include <stb_truetype.h>
 
+#include <strstream>
+#include <string>
+#include <sstream>
+
 #if defined(GA_MINGW)
 #include <unistd.h>
 #endif
 
 static void set_root_path(const char* exepath);
 static void run_unit_tests();
+
+char g_root_path[256];
+static void set_root_path(const char* exepath)
+{
+#if defined(GA_MSVC)
+	strcpy_s(g_root_path, sizeof(g_root_path), exepath);
+
+	// Strip the executable file name off the end of the path:
+	char* slash = strrchr(g_root_path, '\\');
+	if (!slash)
+	{
+		slash = strrchr(g_root_path, '/');
+	}
+	if (slash)
+	{
+		slash[1] = '\0';
+	}
+#elif defined(GA_MINGW)
+	char* cwd;
+	char buf[PATH_MAX + 1];
+	cwd = getcwd(buf, PATH_MAX + 1);
+	strcpy_s(g_root_path, sizeof(g_root_path), cwd);
+
+	g_root_path[strlen(cwd)] = '/';
+	g_root_path[strlen(cwd) + 1] = '\0';
+#endif
+}
 
 void setup_scene_audio(ga_sim* sim, ga_physics_world* world, SoLoud::Soloud* audioEngine)
 {
@@ -58,7 +89,7 @@ void setup_scene_audio(ga_sim* sim, ga_physics_world* world, SoLoud::Soloud* aud
 
 	// Audio Source 1
 	SoLoud::Wav* sfx_drums = new SoLoud::Wav();
-	sfx_drums->load("drums.wav");
+	sfx_drums->load(strcat(g_root_path, "/data/audio/drums.wav"));
 	ga_entity* source = new ga_entity();
 	ga_audio_component* audio_comp = new ga_audio_component(source, audioEngine, sfx_drums);
 	ga_kb_move_component* source_move_comp = new ga_kb_move_component(
@@ -237,33 +268,6 @@ int main(int argc, const char** argv)
 	ga_job::shutdown();
 
 	return 0;
-}
-
-char g_root_path[256];
-static void set_root_path(const char* exepath)
-{
-#if defined(GA_MSVC)
-	strcpy_s(g_root_path, sizeof(g_root_path), exepath);
-
-	// Strip the executable file name off the end of the path:
-	char* slash = strrchr(g_root_path, '\\');
-	if (!slash)
-	{
-		slash = strrchr(g_root_path, '/');
-	}
-	if (slash)
-	{
-		slash[1] = '\0';
-	}
-#elif defined(GA_MINGW)
-	char* cwd;
-	char buf[PATH_MAX + 1];
-	cwd = getcwd(buf, PATH_MAX + 1);
-	strcpy_s(g_root_path, sizeof(g_root_path), cwd);
-
-	g_root_path[strlen(cwd)] = '/';
-	g_root_path[strlen(cwd) + 1] = '\0';
-#endif
 }
 
 void run_unit_tests()

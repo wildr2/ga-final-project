@@ -22,7 +22,7 @@ ga_audio_component::ga_audio_component(ga_entity* ent, SoLoud::Soloud* audioEngi
 	wav->set3dAttenuation(SoLoud::AudioSource::LINEAR_DISTANCE, 1);
 
 	_audioHandle = audioEngine->play3d(*wav, 0, 0, 0);
-	update3DAudio();
+	//update3DAudio();
 
 	/*audioEngine->stop(sfx_drumsHandle);
 	audioEngine->setPause(sfx_drumsHandle, true);
@@ -40,9 +40,6 @@ ga_audio_component::~ga_audio_component()
 void ga_audio_component::update(ga_frame_params* params)
 {	
 	float dt = std::chrono::duration_cast<std::chrono::duration<float>>(params->_delta_time).count();
-
-	// Sound
-	//update3DAudio();
 
 	// Visualization
 #if DEBUG_DRAW_AUDIO
