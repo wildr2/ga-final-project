@@ -13,7 +13,7 @@
 #include "soloud.h"
 #include "soloud_wav.h"
 
-#define DEBUG_DRAW_AUDIO_SOURCES 1
+#define DEBUG_DRAW_AUDIO 1
 
 /*
 ** Component which drives animation; updates skeleton and skinning matrices.

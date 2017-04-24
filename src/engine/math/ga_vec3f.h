@@ -29,6 +29,13 @@ struct ga_vec3f
 	static ga_vec3f x_vector();
 	static ga_vec3f y_vector();
 	static ga_vec3f z_vector();
+
+	bool operator==(const ga_vec3f& other) const
+	{
+		return (x == other.x
+			&& y == other.y
+			&& z == other.z);
+	}
 };
 
 #undef V_VECN_FUNCTIONS
@@ -43,4 +50,25 @@ inline ga_vec3f ga_vec3f_cross(const ga_vec3f& __restrict a, const ga_vec3f& __r
 	result.y = (a.z * b.x) - (a.x * b.z);
 	result.z = (a.x * b.y) - (a.y * b.x);
 	return result;
+}
+
+
+// Custom hash for ga_vec3f based on custom hasher from:
+// http://stackoverflow.com/questions/17016175/c-unordered-map-using-a-custom-class-type-as-the-key
+namespace std
+{
+	template <>
+	struct hash<ga_vec3f>
+	{
+		size_t operator()(const ga_vec3f& k) const
+		{
+			// Compute individual hash values for first, second and third
+			// http://stackoverflow.com/a/1646913/126995
+			size_t res = 17;
+			res = res * 31 + hash<float>()(k.x);
+			res = res * 31 + hash<float>()(k.y);
+			res = res * 31 + hash<float>()(k.z);
+			return res;
+		}
+	};
 }

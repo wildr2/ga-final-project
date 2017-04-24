@@ -17,9 +17,10 @@
 
 #include <map>
 #include <queue>
-#include <unordered_set>
+#include <unordered_map>
 
-#define DEBUG_DRAW_AUDIO_SOURCES 1
+#define DEBUG_DRAW_AUDIO 1
+#define DEBUG_DRAW_SOUND_NODE_EDGES 0
 
 class sound_node
 {
@@ -54,8 +55,12 @@ public:
 private:
 	void update3DAudio();
 
+	void ga_listener_component::update_visible_sound_nodes(const ga_vec3f& pos,
+		std::vector<ga_dynamic_drawcall>& drawcalls);
+
 	SoLoud::Soloud* _audioEngine;
 	ga_physics_world* _world;
 	std::vector<ga_audio_component*> _sources; 
 	std::vector<sound_node> _sound_nodes;
+	std::vector<sound_node*> _visible_sound_nodes;
 };

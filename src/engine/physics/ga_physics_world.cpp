@@ -168,7 +168,7 @@ bool ga_physics_world::raycast_all(const ga_vec3f& ray_origin, const ga_vec3f& r
 	return hit;
 }
 
-std::vector<ga_vec3f> ga_physics_world::getMeshCorners()
+std::vector<ga_vec3f> ga_physics_world::getMeshCorners(float away_dist)
 {
 	std::vector<ga_vec3f> out;
 
@@ -183,7 +183,8 @@ std::vector<ga_vec3f> ga_physics_world::getMeshCorners()
 			cube->get_corners(corners);
 			for (int j = 0; j < corners.size(); ++j)
 			{
-				ga_vec3f pos = corners[j];// +(corners[j] - cube->_center).normal().scale_result(0.25f);
+				ga_vec3f pos = corners[j];
+				if (away_dist > 0) pos += (corners[j] - cube->_center).normal().scale_result(away_dist);
 				pos = rb->_transform.transform_point(pos);
 				out.push_back(pos);
 			}

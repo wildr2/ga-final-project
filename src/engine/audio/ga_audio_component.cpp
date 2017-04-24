@@ -44,7 +44,7 @@ void ga_audio_component::update(ga_frame_params* params)
 	update3DAudio();
 
 	// Visualization
-#if DEBUG_DRAW_AUDIO_SOURCES
+#if DEBUG_DRAW_AUDIO
 	ga_dynamic_drawcall drawcall;
 	draw_debug_sphere(0.2f, get_entity()->get_transform(), &drawcall, { 1, 0.4f, 0.4f });
 

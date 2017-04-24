@@ -15,7 +15,7 @@
 #include <atomic>
 #include <vector>
 
-#define GA_PHYSICS_DEBUG_DRAW 0
+//#define GA_PHYSICS_DEBUG_DRAW
 
 struct ga_collision_info;
 class ga_rigid_body;
@@ -39,7 +39,7 @@ public:
 	bool raycast_all(const ga_vec3f& ray_origin, const ga_vec3f& ray_dir,
 		std::vector<ga_raycast_hit_info>* hit_info, float max_dist=10000);
 
-	std::vector<ga_vec3f> getMeshCorners();
+	std::vector<ga_vec3f> getMeshCorners(float away_dist=0);
 
 private:
 	std::vector<ga_rigid_body*> _bodies;
