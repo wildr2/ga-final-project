@@ -47,7 +47,7 @@ void ga_audio_component::update(ga_frame_params* params)
 	// Visualization
 #if DEBUG_DRAW_AUDIO
 	ga_dynamic_drawcall drawcall;
-	draw_debug_sphere(0.2f, get_entity()->get_transform(), &drawcall, { 1, 0.4f, 0.4f });
+	draw_debug_sphere(0.2f, get_entity()->get_transform(), &drawcall, { 0, 1, 0 });
 
 	while (params->_dynamic_drawcall_lock.test_and_set(std::memory_order_acquire)) {}
 	params->_dynamic_drawcalls.push_back(drawcall);

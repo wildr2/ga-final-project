@@ -35,7 +35,7 @@ ga_listener_component::ga_listener_component(ga_entity* ent, SoLoud::Soloud* aud
 	for (itr = corner_count.begin(); itr != corner_count.end(); ++itr)
 	{
 		// Create nodes for outer mesh corners (only one vertex at that location)
-		if (itr->second > 0)
+		if (itr->second == 1)
 		{
 			ga_vec3f node_pos = corner_to_apart_corner[itr->first];
 			_sound_nodes.push_back(sound_node(_sound_nodes.size(), node_pos));
@@ -82,6 +82,7 @@ void ga_listener_component::update(ga_frame_params* params)
 		if (occluded)
 		{
 			ga_vec3f virtual_source = { MAX_AUDIO_DIST, MAX_AUDIO_DIST, MAX_AUDIO_DIST };
+			ga_vec3f hear_dir = { 0, 0, 0 };
 			float min_dist = MAX_AUDIO_DIST;
 			for (int j = 0; j < _visible_sound_nodes.size(); ++j)
 			{
@@ -89,13 +90,31 @@ void ga_listener_component::update(ga_frame_params* params)
 				float dist_from_source = _visible_sound_nodes[j]->_propogation[_sources[i]] +
 					node_to_listener.mag();
 
+				float str = (dist_from_source - MAX_AUDIO_DIST) / -MAX_AUDIO_DIST;
+				hear_dir += node_to_listener.normal().scale_result(str);
+
 				if (dist_from_source < min_dist)
 				{
 					min_dist = dist_from_source;
 					virtual_source = pos + node_to_listener.normal()
 						.scale_result(dist_from_source);
 				}
+
+#if DEBUG_DRAW_AUDIO
+				if (_visible_sound_nodes.size() > 0)
+				{
+					// Visualize visible node LOS
+					ga_dynamic_drawcall drawcall;
+					float str = (dist_from_source - MAX_AUDIO_DIST) / -MAX_AUDIO_DIST;
+					ga_vec3f color = { 1 - str, str, 0 };
+					draw_debug_line(pos, _visible_sound_nodes[j]->_pos, &drawcall, color);
+					drawcalls.push_back(drawcall);
+				}
+#endif
 			}
+
+			hear_dir.normalize();
+			virtual_source = pos + hear_dir.scale_result(min_dist);
 
 			// Use virtual source position
 			_audioEngine->set3dSourcePosition(handle,
@@ -104,12 +123,19 @@ void ga_listener_component::update(ga_frame_params* params)
 #if DEBUG_DRAW_AUDIO
 			if (_visible_sound_nodes.size() > 0)
 			{
-				// Visualize node los
+				// Visualize hear direction
 				ga_dynamic_drawcall drawcall;
 				float str = (min_dist - MAX_AUDIO_DIST) / -MAX_AUDIO_DIST;
 				ga_vec3f color = { 1 - str, str, 0 };
 				draw_debug_line(pos, virtual_source, &drawcall, color);
 				drawcalls.push_back(drawcall);
+
+				// Virtual source
+				ga_dynamic_drawcall drawcall_vs;
+				ga_mat4f tran;
+				tran.make_translation(virtual_source);
+				draw_debug_sphere(0.2f, tran, &drawcall_vs, { 1, 1, 1 });
+				drawcalls.push_back(drawcall_vs);
 			}
 #endif
 		}
