@@ -35,7 +35,7 @@ ga_listener_component::ga_listener_component(ga_entity* ent, SoLoud::Soloud* aud
 	for (itr = corner_count.begin(); itr != corner_count.end(); ++itr)
 	{
 		// Create nodes for outer mesh corners (only one vertex at that location)
-		if (itr->second > 0)
+		if (itr->second == 1)
 		{
 			ga_vec3f node_pos = corner_to_apart_corner[itr->first];
 			_sound_nodes.push_back(sound_node(_sound_nodes.size(), node_pos));
@@ -78,48 +78,37 @@ void ga_listener_component::update(ga_frame_params* params)
 		bool occluded = _world->raycast_all(pos, to_source.normal(), NULL, to_source.mag());
 
 		// Set source position (virtual source position if occluded)
-		int handle = _sources[i]->getAudioHandle();
+		std::vector<ga_vec3f> voice_positions;
 		if (occluded)
 		{
-			ga_vec3f virtual_source = { MAX_AUDIO_DIST, MAX_AUDIO_DIST, MAX_AUDIO_DIST };
-			float min_dist = MAX_AUDIO_DIST;
 			for (int j = 0; j < _visible_sound_nodes.size(); ++j)
 			{
 				ga_vec3f node_to_listener = _visible_sound_nodes[j]->_pos - pos;
 				float dist_from_source = _visible_sound_nodes[j]->_propogation[_sources[i]] +
 					node_to_listener.mag();
 
-				if (dist_from_source < min_dist)
-				{
-					min_dist = dist_from_source;
-					virtual_source = pos + node_to_listener.normal()
-						.scale_result(dist_from_source);
-				}
-			}
-
-			// Use virtual source position
-			_audioEngine->set3dSourcePosition(handle,
-				virtual_source.x, virtual_source.y, virtual_source.z);
+				ga_vec3f voice_pos = pos + node_to_listener.normal().scale_result(dist_from_source);
+				voice_positions.push_back(voice_pos);
 
 #if DEBUG_DRAW_AUDIO
-			if (_visible_sound_nodes.size() > 0)
-			{
-				// Visualize node los
-				ga_dynamic_drawcall drawcall;
-				float str = (min_dist - MAX_AUDIO_DIST) / -MAX_AUDIO_DIST;
-				ga_vec3f color = { 1 - str, str, 0 };
-				draw_debug_line(pos, virtual_source, &drawcall, color);
-				drawcalls.push_back(drawcall);
-			}
+				if (_visible_sound_nodes.size() > 0)
+				{
+					// Visualize virtual voices
+					ga_dynamic_drawcall drawcall;
+					float str = (dist_from_source - MAX_AUDIO_DIST) / -MAX_AUDIO_DIST;
+					ga_vec3f color = { 1 - str, str, 0 };
+					draw_debug_line(pos, _visible_sound_nodes[j]->_pos, &drawcall, color);
+					drawcalls.push_back(drawcall);
+				}
 #endif
+			}
 		}
 		else // Not Occluded
 		{
 			// Use actual source position
-			_audioEngine->set3dSourcePosition(handle,
-				source_pos.x, source_pos.y, source_pos.z);
+			voice_positions.push_back(source_pos);
 		}
-		
+		//_sources[i]->update_voices(voice_positions);
 		
 		
 #if DEBUG_DRAW_AUDIO
@@ -132,7 +121,6 @@ void ga_listener_component::update(ga_frame_params* params)
 #endif
 	}
 	
-
 	// Udpate panning / distance attenuation
 	update3DAudio();
 

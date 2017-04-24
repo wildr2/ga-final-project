@@ -22,15 +22,18 @@ public:
 	ga_audio_component(class ga_entity* ent, SoLoud::Soloud* audioEngine, SoLoud::Wav* wav);
 	virtual ~ga_audio_component();
 
-	int getAudioHandle() { return _audioHandle; }
+	//int getAudioHandle() { return _audioHandle; }
 
 	virtual void update(struct ga_frame_params* params) override;
 
 private:
 
-	void update3DAudio();
+	//void update3DAudio();
+	void update_voices(std::vector<ga_vec3f> positions);
 
 	SoLoud::Soloud* _audioEngine;
-	int _audioHandle;
-	
+	std::vector<int> _audioHandles;
+	SoLoud::Wav* _clip;
+
+	friend class ga_listener_component;
 };

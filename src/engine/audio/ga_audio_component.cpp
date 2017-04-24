@@ -17,12 +17,18 @@ ga_audio_component::ga_audio_component(ga_entity* ent, SoLoud::Soloud* audioEngi
 {
 	_audioEngine = audioEngine;
 
-	wav->setLooping(true);
-	wav->set3dMinMaxDistance(1, MAX_AUDIO_DIST);
-	wav->set3dAttenuation(SoLoud::AudioSource::LINEAR_DISTANCE, 1);
+	_clip = wav;
+	_clip->setLooping(true);
+	_clip->set3dMinMaxDistance(1, MAX_AUDIO_DIST);
+	_clip->set3dAttenuation(SoLoud::AudioSource::LINEAR_DISTANCE, 1);
 
-	_audioHandle = audioEngine->play3d(*wav, 0, 0, 0);
-	update3DAudio();
+	_audioHandles.push_back(audioEngine->play3d(*_clip, 0, 0, 0));
+	ga_mat4f trans = get_entity()->get_transform();
+	_audioEngine->set3dSourcePosition(_audioHandles[0],
+		trans.get_translation().x,
+		trans.get_translation().y,
+		trans.get_translation().z);
+	//update3DAudio();
 
 	/*audioEngine->stop(sfx_drumsHandle);
 	audioEngine->setPause(sfx_drumsHandle, true);
@@ -55,13 +61,38 @@ void ga_audio_component::update(ga_frame_params* params)
 #endif
 }
 
-void ga_audio_component::update3DAudio()
+void ga_audio_component::update_voices(std::vector<ga_vec3f> positions)
 {
-	// Update source position (for distance attenuation / panning)
-	ga_mat4f trans = get_entity()->get_transform();
-	_audioEngine->set3dSourcePosition(_audioHandle,
-		trans.get_translation().x,
-		trans.get_translation().y,
-		trans.get_translation().z);
+	for (int i = 0; i < positions.size(); ++i)
+	{
+		if (i < _audioHandles.size())
+		{
+			// Update position of existing voice
+			_audioEngine->set3dSourcePosition(_audioHandles[i],
+				positions[i].x, positions[i].y, positions[i].z);
+		}
+		else
+		{
+			// Start playing new voice
+			_audioHandles.push_back(_audioEngine->play3d(*_clip,
+				positions[i].x, positions[i].y, positions[i].z));
+		}
+	}
+	for (int i = _audioHandles.size() - 1; i >= positions.size(); --i)
+	{
+		// Stop playing old voices (no longer relevent)
+		_audioEngine->stop(_audioHandles[i]);
+		_audioHandles.pop_back();
+	}
 }
+
+//void ga_audio_component::update3DAudio()
+//{
+//	// Update source position (for distance attenuation / panning)
+//	ga_mat4f trans = get_entity()->get_transform();
+//	_audioEngine->set3dSourcePosition(_audioHandle,
+//		trans.get_translation().x,
+//		trans.get_translation().y,
+//		trans.get_translation().z);
+//}
 
