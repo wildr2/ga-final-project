@@ -49,16 +49,19 @@ void setup_scene_audio(ga_sim* sim, ga_physics_world* world, SoLoud::Soloud* aud
 	ga_entity* listener_ent = new ga_entity();
 	ga_listener_component* listener = new ga_listener_component(listener_ent, audioEngine, world);
 	ga_kb_move_component* listener_move_comp = new ga_kb_move_component(
-		listener_ent, k_button_k, k_button_j, k_button_i, k_button_l);
+		listener_ent, k_button_i, k_button_l, k_button_k, k_button_j);
 	ga_mat4f*  listener_transform = new ga_mat4f();
 	listener_transform->make_identity();
 	listener_transform->translate({ -7, 0.5f, 0 });
+	/*ga_quatf rotation;
+	rotation.make_axis_angle(ga_vec3f::y_vector(), ga_degrees_to_radians(180.0f));
+	listener_transform->rotate(rotation);*/
 	listener_ent->set_transform(*listener_transform);
 	sim->add_entity(listener_ent);
 
 	// Audio Source 1
 	SoLoud::Wav* sfx_drums = new SoLoud::Wav();
-	sfx_drums->load("drums.wav");
+	int ret = sfx_drums->load("drums.wav");
 	ga_entity* source = new ga_entity();
 	ga_audio_component* audio_comp = new ga_audio_component(source, audioEngine, sfx_drums);
 	ga_kb_move_component* source_move_comp = new ga_kb_move_component(
@@ -117,9 +120,9 @@ int main(int argc, const char** argv)
 	ga_output* output = new ga_output(input->get_window());
 
 	// Create camera.
-	ga_camera* camera = new ga_camera({ 0.0f, 7.0f, 20.0f });
+	ga_camera* camera = new ga_camera({ 0.0f, 7.0f, -20.0f });
 	ga_quatf rotation;
-	rotation.make_axis_angle(ga_vec3f::y_vector(), ga_degrees_to_radians(180.0f));
+	rotation.make_axis_angle(ga_vec3f::y_vector(), ga_degrees_to_radians(0));
 	camera->rotate(rotation);
 	rotation.make_axis_angle(ga_vec3f::x_vector(), ga_degrees_to_radians(15.0f));
 	camera->rotate(rotation);

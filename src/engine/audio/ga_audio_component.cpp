@@ -22,12 +22,6 @@ ga_audio_component::ga_audio_component(ga_entity* ent, SoLoud::Soloud* audioEngi
 	_clip->set3dMinMaxDistance(1, MAX_AUDIO_DIST);
 	_clip->set3dAttenuation(SoLoud::AudioSource::LINEAR_DISTANCE, 1);
 
-	_audioHandles.push_back(audioEngine->play3d(*_clip, 0, 0, 0));
-	ga_mat4f trans = get_entity()->get_transform();
-	_audioEngine->set3dSourcePosition(_audioHandles[0],
-		trans.get_translation().x,
-		trans.get_translation().y,
-		trans.get_translation().z);
 	//update3DAudio();
 
 	/*audioEngine->stop(sfx_drumsHandle);
@@ -78,10 +72,10 @@ void ga_audio_component::update_voices(std::vector<ga_vec3f> positions)
 				positions[i].x, positions[i].y, positions[i].z));
 		}
 	}
-	for (int i = _audioHandles.size() - 1; i >= positions.size(); --i)
+	while (_audioHandles.size() > positions.size())
 	{
 		// Stop playing old voices (no longer relevent)
-		_audioEngine->stop(_audioHandles[i]);
+		_audioEngine->stop(_audioHandles[_audioHandles.size()-1]);
 		_audioHandles.pop_back();
 	}
 }

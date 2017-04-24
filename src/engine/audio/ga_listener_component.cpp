@@ -91,15 +91,12 @@ void ga_listener_component::update(ga_frame_params* params)
 				voice_positions.push_back(voice_pos);
 
 #if DEBUG_DRAW_AUDIO
-				if (_visible_sound_nodes.size() > 0)
-				{
-					// Visualize virtual voices
-					ga_dynamic_drawcall drawcall;
-					float str = (dist_from_source - MAX_AUDIO_DIST) / -MAX_AUDIO_DIST;
-					ga_vec3f color = { 1 - str, str, 0 };
-					draw_debug_line(pos, _visible_sound_nodes[j]->_pos, &drawcall, color);
-					drawcalls.push_back(drawcall);
-				}
+				// Visualize virtual voices
+				ga_dynamic_drawcall drawcall;
+				float str = (dist_from_source - MAX_AUDIO_DIST) / -MAX_AUDIO_DIST;
+				ga_vec3f color = { 1 - str, str, 0 };
+				draw_debug_line(pos, _visible_sound_nodes[j]->_pos, &drawcall, color);
+				drawcalls.push_back(drawcall);
 #endif
 			}
 		}
@@ -108,7 +105,7 @@ void ga_listener_component::update(ga_frame_params* params)
 			// Use actual source position
 			voice_positions.push_back(source_pos);
 		}
-		//_sources[i]->update_voices(voice_positions);
+		_sources[i]->update_voices(voice_positions);
 		
 		
 #if DEBUG_DRAW_AUDIO
