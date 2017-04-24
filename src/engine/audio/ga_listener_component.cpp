@@ -21,10 +21,24 @@ ga_listener_component::ga_listener_component(ga_entity* ent, SoLoud::Soloud* aud
 	update3DAudio();
 
 	// Nodes
-	std::vector<ga_vec3f> positions = world->getMeshCorners();
-	for (int i = 0; i < positions.size(); ++i)
+	std::vector<ga_vec3f> corners = world->getMeshCorners();
+	std::vector<ga_vec3f> apart_corners = world->getMeshCorners(0.25f);
+	std::unordered_map<ga_vec3f, ga_vec3f> corner_to_apart_corner;
+	std::unordered_map<ga_vec3f, int> corner_count;
+	
+	for (int i = 0; i < corners.size(); ++i)
 	{
-		_sound_nodes.push_back(sound_node(i, positions[i]));
+		corner_count[corners[i]]++;
+		corner_to_apart_corner[corners[i]] = apart_corners[i];
+	}
+	std::unordered_map<ga_vec3f, int>::iterator itr;
+	for (itr = corner_count.begin(); itr != corner_count.end(); ++itr)
+	{
+		if (itr->second == 1)
+		{
+			ga_vec3f node_pos = corner_to_apart_corner[itr->first];
+			_sound_nodes.push_back(sound_node(_sound_nodes.size(), node_pos));
+		}
 	}
 
 	// Edges
@@ -52,6 +66,8 @@ void ga_listener_component::update(ga_frame_params* params)
 	float dt = std::chrono::duration_cast<std::chrono::duration<float>>(params->_delta_time).count();
 	std::vector<ga_dynamic_drawcall> drawcalls;
 
+	update_visible_sound_nodes(pos, drawcalls);
+
 	// Source occlusion
 	for (int i = 0; i < _sources.size(); ++i)
 	{
@@ -61,16 +77,7 @@ void ga_listener_component::update(ga_frame_params* params)
 		float dist_to_source = to_source.mag();
 
 		std::vector<ga_raycast_hit_info> info;
-		_world->raycast_all(pos, to_source.normal(), &info);
-		bool occluded = false;
-		for (int j = 0; j < info.size(); ++j)
-		{
-			if (info[j]._dist <= dist_to_source)
-			{
-				occluded = true;
-				break;
-			}
-		}
+		bool occluded = _world->raycast_all(pos, to_source.normal(), &info, dist_to_source);
 
 		// Adjust volume
 		int handle = _sources[i]->getAudioHandle();
@@ -79,7 +86,7 @@ void ga_listener_component::update(ga_frame_params* params)
 		_audioEngine->setVolume(handle, vol);
 		
 		
-#if DEBUG_DRAW_AUDIO_SOURCES
+#if DEBUG_DRAW_AUDIO
 		// Visualize raycast
 		ga_dynamic_drawcall drawcall;
 		ga_vec3f color = { 0, 1, 0 };
@@ -88,11 +95,13 @@ void ga_listener_component::update(ga_frame_params* params)
 		drawcalls.push_back(drawcall);
 #endif
 	}
+	
 
 	// Udpate panning / distance attenuation
 	update3DAudio();
+
 	
-#if DEBUG_DRAW_AUDIO_SOURCES
+#if DEBUG_DRAW_AUDIO
 	// Visualize listener
 	ga_dynamic_drawcall drawcall;
 	draw_debug_sphere(0.2f, get_entity()->get_transform(), &drawcall, { 0.4f, 0.549f, 1 });
@@ -100,12 +109,6 @@ void ga_listener_component::update(ga_frame_params* params)
 
 	// Visualize sound nodes
 	ga_audio_component* vis_source = _sources[0];
-	/*bool* visited = new bool[_sound_nodes.size()];
-	for (int i = 0; i < _sound_nodes.size(); ++i)
-	{
-		visited[i] = false;
-	}*/
-
 	for (int i = 0; i < _sound_nodes.size(); ++i)
 	{
 		// Find distance from source for node1
@@ -120,39 +123,51 @@ void ga_listener_component::update(ga_frame_params* params)
 		ga_vec3f color = { 1 - str, str, 0 };
 
 		ga_dynamic_drawcall drawcall;
-		//ga_mat4f transform;
-		//transform.make_translation(_sound_nodes[i]._pos);
 		draw_debug_star(0.1f, _sound_nodes[i]._pos, &drawcall, color);
 		drawcalls.push_back(drawcall);
-
-
-		//// Draw lines to neighboring nodes
-		//for (int j = 0; j < _sound_nodes[i]._neighbors.size(); ++j)
-		//{
-		//	sound_node* endpoint = _sound_nodes[i]._neighbors[j];
-		//	if (visited[endpoint->_id]) continue;
-
-		//	// Find distance from source for node2
-		//	std::map<ga_audio_component*, float>::iterator itr2;
-		//	itr2 = endpoint->_propogation.find(vis_source);
-		//	
-		//	if (itr2 != endpoint->_propogation.end())
-		//	{
-		//		dist_from_source = std::min(dist_from_source, itr2->second);
-		//	}
-		//	
-		//	// Determine color of line to neighboring nodes based:
-		//	// Greater distance from the sound source to visualize -> more blue
-		//	float str = 1.0f / (1 + dist_from_source / 2.0f);
-		//	ga_vec3f color = { 0, str, 1 - str };
-
-		//	ga_dynamic_drawcall drawcall;
-		//	draw_debug_line(_sound_nodes[i]._pos, endpoint->_pos, &drawcall, color);
-		//	drawcalls.push_back(drawcall);
-		//}
-		//visited[_sound_nodes[i]._id] = true;
 	}
 
+#if DEBUG_DRAW_SOUND_NODE_EDGES
+	bool* visited = new bool[_sound_nodes.size()];
+	for (int i = 0; i < _sound_nodes.size(); ++i)
+	{
+		visited[i] = false;
+	}
+	for (int i = 0; i < _sound_nodes.size(); ++i)
+	{
+		// Find distance from source for node1
+		std::map<ga_audio_component*, float>::iterator itr;
+		itr = _sound_nodes[i]._propogation.find(vis_source);
+		float dist_from_source = itr == _sound_nodes[i]._propogation.end() ?
+			std::numeric_limits<float>::max() : itr->second;
+
+		// Draw lines to neighboring nodes
+		for (int j = 0; j < _sound_nodes[i]._neighbors.size(); ++j)
+		{
+			sound_node* endpoint = _sound_nodes[i]._neighbors[j];
+			if (visited[endpoint->_id]) continue;
+
+			// Find distance from source for node2
+			std::map<ga_audio_component*, float>::iterator itr2;
+			itr2 = endpoint->_propogation.find(vis_source);
+
+			if (itr2 != endpoint->_propogation.end())
+			{
+				dist_from_source = std::min(dist_from_source, itr2->second);
+			}
+
+			// Determine color of line to neighboring nodes based:
+			// Greater distance from the sound source to visualize -> more blue
+			float str = 1.0f / (1 + dist_from_source / 2.0f);
+			ga_vec3f color = { 1 - str, str, 0 };
+
+			ga_dynamic_drawcall drawcall;
+			draw_debug_line(_sound_nodes[i]._pos, endpoint->_pos, &drawcall, color);
+			drawcalls.push_back(drawcall);
+		}
+		visited[_sound_nodes[i]._id] = true;
+	}
+#endif
 #endif
 
 	// Draw
@@ -200,6 +215,29 @@ void ga_listener_component::update3DAudio()
 	_audioEngine->update3dAudio();
 }
 
+void ga_listener_component::update_visible_sound_nodes(const ga_vec3f& pos,
+	std::vector<ga_dynamic_drawcall>& drawcalls)
+{
+	// Find visible sound nodes
+	for (int i = 0; i < _sound_nodes.size(); ++i)
+	{
+		_visible_sound_nodes.clear();
+
+		ga_vec3f v = _sound_nodes[i]._pos - pos;
+		if (!_world->raycast_all(pos, v.normal(), NULL, v.mag()))
+		{
+			// Sound node in LOS
+			_visible_sound_nodes.push_back(&_sound_nodes[i]);
+
+#if DEBUG_DRAW_AUDIO
+			// Visualize raycast
+			ga_dynamic_drawcall drawcall;
+			draw_debug_line(pos, _sound_nodes[i]._pos, &drawcall, { 0.4f, 0.549f, 1 });
+			drawcalls.push_back(drawcall);
+#endif
+		}
+	}
+}
 
 
 void sound_node::propogate(ga_audio_component* source, float initial_dist)
