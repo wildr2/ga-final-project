@@ -12,6 +12,7 @@
 #include "graphics/ga_geometry.h"
 #include "entity/ga_entity.h"
 #include "soloud_biquadresonantfilter.h"
+#include <iostream>
 
 
 ga_listener_component::ga_listener_component(ga_entity* ent, SoLoud::Soloud* audioEngine,
@@ -24,8 +25,6 @@ ga_listener_component::ga_listener_component(ga_entity* ent, SoLoud::Soloud* aud
 	SoLoud::BiquadResonantFilter low_pass_filter;
 	low_pass_filter.setParams(SoLoud::BiquadResonantFilter::LOWPASS, 44100, MAX_LOWPASS_CUTOFF, 2);
 	_audioEngine->setGlobalFilter(0, &low_pass_filter);
-	//low_pass_filter.mFrequency = 100;
-	
 
 
 	// Nodes
@@ -46,6 +45,8 @@ ga_listener_component::ga_listener_component(ga_entity* ent, SoLoud::Soloud* aud
 		if (itr->second == 1 || itr->second == 3)
 		{
 			ga_vec3f node_pos = corner_to_apart_corner[itr->first];
+			if (itr->second == 3) node_pos = itr->first; // use original corner position for concave corners
+			if (node_pos.y < 0) node_pos += { 0, 0.1f, 0 }; // prevent edges between ground layer nodes
 			_sound_nodes.push_back(sound_node(_sound_nodes.size(), node_pos));
 		}
 	}
@@ -87,6 +88,7 @@ void ga_listener_component::update(ga_frame_params* params)
 
 		// Set source position (virtual source position if occluded)
 		int handle = _sources[i]->getAudioHandle();
+		float lowpass_cutoff = MAX_LOWPASS_CUTOFF;
 		if (occluded)
 		{
 			ga_vec3f virtual_source = { MAX_AUDIO_DIST, MAX_AUDIO_DIST, MAX_AUDIO_DIST };
@@ -146,10 +148,11 @@ void ga_listener_component::update(ga_frame_params* params)
 			_audioEngine->set3dSourcePosition(handle,
 				virtual_source.x, virtual_source.y, virtual_source.z);
 
-			// Update low pass filter
-			float path_extension = (pos - source_pos).mag() / std::pow(min_dist, 2.0f);
-			float cutoff = path_extension * MAX_LOWPASS_CUTOFF;
-			_audioEngine->setFilterParameter(0, 0, SoLoud::BiquadResonantFilter::FREQUENCY, cutoff);
+			// Update low pass filter cutoff - greater disparity between the shortest path from listener to source
+			//   and the direct (occluded) path => a lower cutoff frequency
+			float path_extension = std::pow((to_source.mag() / min_dist), 2.0f);
+			lowpass_cutoff = path_extension * MAX_LOWPASS_CUTOFF;
+			
 
 #if DEBUG_DRAW_AUDIO
 			if (_visible_sound_nodes.size() > 0)
@@ -175,14 +178,11 @@ void ga_listener_component::update(ga_frame_params* params)
 			// Use actual source position
 			_audioEngine->set3dSourcePosition(handle,
 				source_pos.x, source_pos.y, source_pos.z);
-
-			// Remove low pass filter
-			_audioEngine->setFilterParameter(0, 0, SoLoud::BiquadResonantFilter::FREQUENCY, MAX_LOWPASS_CUTOFF);
 		}
 
-		
-		
-		
+		// Apply lowpass
+		_audioEngine->setFilterParameter(0, 0, SoLoud::BiquadResonantFilter::FREQUENCY, lowpass_cutoff);
+		std::cout << "lowpass cutoff: " << lowpass_cutoff << std::endl;
 		
 #if DEBUG_DRAW_AUDIO
 		// Visualize raycast

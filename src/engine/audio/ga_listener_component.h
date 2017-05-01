@@ -19,7 +19,7 @@
 #include <queue>
 #include <unordered_map>
 
-#define MAX_AUDIO_DIST 40.0f
+#define MAX_AUDIO_DIST 20.0f
 #define MAX_LOWPASS_CUTOFF 10000
 #define DEBUG_DRAW_AUDIO 1
 #define DEBUG_DRAW_SOUND_NODE_EDGES 0

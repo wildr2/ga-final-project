@@ -154,6 +154,19 @@ void create_scene_wall(ga_sim* sim, ga_physics_world* world)
 		create_cube(&tran, sim, world);
 	}
 }
+void create_scene_wall2(ga_sim* sim, ga_physics_world* world)
+{
+	ga_mat4f tran;
+	for (int i = 0; i < 5; ++i)
+	{
+		for (int j = 0; j < 8; ++j)
+		{
+			tran.make_scaling(1);
+			tran.translate({ 0, i * 2.0f, 4 - 2.0f * j });
+			create_cube(&tran, sim, world);
+		}
+	}
+}
 void create_scene_window(ga_sim* sim, ga_physics_world* world)
 {
 	ga_mat4f tran;
@@ -217,6 +230,7 @@ int main(int argc, const char** argv)
 
 	// Scene
 	create_scene_wall(sim, world);
+	//create_scene_wall2(sim, world);
 	create_scene_window(sim, world);
 	//create_scene_pillar(sim, world);
 	setup_scene_audio(sim, world, &audioEngine);
