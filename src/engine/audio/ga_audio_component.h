@@ -14,21 +14,21 @@
 #include "soloud_wav.h"
 
 /*
-** Component which drives animation; updates skeleton and skinning matrices.
+** Component which models a source of sound in 3D space; plays a wav file on loop.
 */
 class ga_audio_component : public ga_component
 {
 public:
-	ga_audio_component(class ga_entity* ent, SoLoud::Soloud* audioEngine, SoLoud::Wav* wav);
+	ga_audio_component(class ga_entity* ent, SoLoud::Soloud* audio_engine, SoLoud::Wav* wav);
 	virtual ~ga_audio_component();
 
-	int getAudioHandle() { return _audioHandle; }
+	int get_audio_handle() { return _audio_handle; }
 
 	virtual void update(struct ga_frame_params* params) override;
 
 private:
 
-	SoLoud::Soloud* _audioEngine;
-	int _audioHandle;
+	SoLoud::Soloud* _audio_engine;
+	int _audio_handle;
 	
 };

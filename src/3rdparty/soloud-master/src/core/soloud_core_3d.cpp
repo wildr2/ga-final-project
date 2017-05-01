@@ -291,7 +291,7 @@ namespace SoLoud
 		}
 	}
 
-	void Soloud::update3dAudio()
+	void Soloud::update_3D_audio()
 	{
 		unsigned int voicecount = 0;
 		unsigned int voices[VOICE_COUNT];

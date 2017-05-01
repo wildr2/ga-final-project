@@ -13,15 +13,15 @@
 #include "graphics/ga_geometry.h"
 #include "entity/ga_entity.h"
 
-ga_audio_component::ga_audio_component(ga_entity* ent, SoLoud::Soloud* audioEngine, SoLoud::Wav* wav) : ga_component(ent)
+ga_audio_component::ga_audio_component(ga_entity* ent, SoLoud::Soloud* audio_engine, SoLoud::Wav* wav) : ga_component(ent)
 {
-	_audioEngine = audioEngine;
+	_audio_engine = audio_engine;
 
 	wav->setLooping(true);
 	wav->set3dMinMaxDistance(1, MAX_AUDIO_DIST);
 	wav->set3dAttenuation(SoLoud::AudioSource::LINEAR_DISTANCE, 1);
 
-	_audioHandle = audioEngine->play3d(*wav, 0, 0, 0);
+	_audio_handle = audio_engine->play3d(*wav, 0, 0, 0);
 }
 
 ga_audio_component::~ga_audio_component()

@@ -15,21 +15,21 @@
 #include <iostream>
 
 
-ga_listener_component::ga_listener_component(ga_entity* ent, SoLoud::Soloud* audioEngine,
+ga_listener_component::ga_listener_component(ga_entity* ent, SoLoud::Soloud* audio_engine,
 	ga_physics_world* world) : ga_component(ent)
 {
 	_world = world;
-	_audioEngine = audioEngine;
-	update3DAudio();
+	_audio_engine = audio_engine;
+	update_3D_audio();
 
 	SoLoud::BiquadResonantFilter low_pass_filter;
 	low_pass_filter.setParams(SoLoud::BiquadResonantFilter::LOWPASS, 44100, MAX_LOWPASS_CUTOFF, 2);
-	_audioEngine->setGlobalFilter(0, &low_pass_filter);
+	_audio_engine->setGlobalFilter(0, &low_pass_filter);
 
 
 	// Nodes
-	std::vector<ga_vec3f> corners = world->getMeshCorners();
-	std::vector<ga_vec3f> apart_corners = world->getMeshCorners(0.05f);
+	std::vector<ga_vec3f> corners = world->get_mesh_corners();
+	std::vector<ga_vec3f> apart_corners = world->get_mesh_corners(0.05f);
 	std::unordered_map<ga_vec3f, ga_vec3f> corner_to_apart_corner;
 	std::unordered_map<ga_vec3f, int> corner_count;
 	
@@ -145,7 +145,7 @@ void ga_listener_component::update(ga_frame_params* params)
 			virtual_source = pos + hear_dir.scale_result(min_dist);
 
 			// Use virtual source position
-			_audioEngine->set3dSourcePosition(handle,
+			_audio_engine->set3dSourcePosition(handle,
 				virtual_source.x, virtual_source.y, virtual_source.z);
 
 			// Update low pass filter cutoff - greater disparity between the shortest path from listener to source
@@ -176,12 +176,12 @@ void ga_listener_component::update(ga_frame_params* params)
 		else // Not Occluded
 		{
 			// Use actual source position
-			_audioEngine->set3dSourcePosition(handle,
+			_audio_engine->set3dSourcePosition(handle,
 				source_pos.x, source_pos.y, source_pos.z);
 		}
 
 		// Apply lowpass
-		_audioEngine->setFilterParameter(0, 0, SoLoud::BiquadResonantFilter::FREQUENCY, lowpass_cutoff);
+		_audio_engine->setFilterParameter(0, 0, SoLoud::BiquadResonantFilter::FREQUENCY, lowpass_cutoff);
 		std::cout << "lowpass cutoff: " << lowpass_cutoff << std::endl;
 		
 #if DEBUG_DRAW_AUDIO
@@ -196,7 +196,7 @@ void ga_listener_component::update(ga_frame_params* params)
 	
 
 	// Udpate panning / distance attenuation
-	update3DAudio();
+	update_3D_audio();
 
 	
 #if DEBUG_DRAW_AUDIO
@@ -280,7 +280,7 @@ void ga_listener_component::update(ga_frame_params* params)
 	}
 }
 
-void ga_listener_component::registerAudioSource(ga_audio_component* source)
+void ga_listener_component::register_audio_source(ga_audio_component* source)
 {
 	_sources.push_back(source);
 
@@ -301,16 +301,16 @@ void ga_listener_component::registerAudioSource(ga_audio_component* source)
 	}
 }
 
-void ga_listener_component::update3DAudio()
+void ga_listener_component::update_3D_audio()
 {
 	// Update source position (for distance attenuation / panning)
 	ga_mat4f trans = get_entity()->get_transform();
-	_audioEngine->set3dListenerPosition(
+	_audio_engine->set3dListenerPosition(
 		trans.get_translation().x,
 		trans.get_translation().y,
 		trans.get_translation().z);
 
-	_audioEngine->update3dAudio();
+	_audio_engine->update_3D_audio();
 }
 
 void ga_listener_component::update_visible_sound_nodes(const ga_vec3f& pos,

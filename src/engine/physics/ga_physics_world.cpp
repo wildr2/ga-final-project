@@ -169,7 +169,7 @@ bool ga_physics_world::raycast_all(const ga_vec3f& ray_origin, const ga_vec3f& r
 	return hit;
 }
 
-std::vector<ga_vec3f> ga_physics_world::getMeshCorners(float away_dist)
+std::vector<ga_vec3f> ga_physics_world::get_mesh_corners(float away_dist)
 {
 	std::vector<ga_vec3f> out;
 

@@ -47,6 +47,8 @@
 static void set_root_path(const char* exepath);
 static void run_unit_tests();
 
+
+
 char g_root_path[256];
 static void set_root_path(const char* exepath)
 {
@@ -74,35 +76,7 @@ static void set_root_path(const char* exepath)
 #endif
 }
 
-void setup_scene_audio(ga_sim* sim, ga_physics_world* world, SoLoud::Soloud* audioEngine)
-{
-	// Listener
-	ga_entity* listener_ent = new ga_entity();
-	ga_listener_component* listener = new ga_listener_component(listener_ent, audioEngine, world);
-	ga_kb_move_component* listener_move_comp = new ga_kb_move_component(
-		listener_ent, k_button_k, k_button_j, k_button_i, k_button_l);
-	ga_mat4f*  listener_transform = new ga_mat4f();
-	listener_transform->make_identity();
-	listener_transform->translate({ 7, 1.5f, 0 });
-	listener_ent->set_transform(*listener_transform);
-	sim->add_entity(listener_ent);
-
-	// Audio Source 1
-	SoLoud::Wav* sfx_drums = new SoLoud::Wav();
-	sfx_drums->load(strcat(g_root_path, "/data/audio/drums.wav"));
-	ga_entity* source = new ga_entity();
-	ga_audio_component* audio_comp = new ga_audio_component(source, audioEngine, sfx_drums);
-	//ga_kb_move_component* source_move_comp = new ga_kb_move_component(
-		//source, k_button_g, k_button_f, k_button_t, k_button_h);
-
-	ga_mat4f* source_transform = new ga_mat4f();
-	source_transform->make_identity();
-	source_transform->translate({ -3, 1.5f, 0 });
-	source->set_transform(*source_transform);
-	sim->add_entity(source);
-	listener->registerAudioSource(audio_comp);
-}
-
+// Scene Creation
 ga_entity* create_cube(ga_mat4f* transform, ga_sim* sim, ga_physics_world* world)
 {
 	ga_entity* cube = new ga_entity();
@@ -201,6 +175,32 @@ void create_scene_pillar(ga_sim* sim, ga_physics_world* world)
 	tran.translate({ 3, 2, 0 });
 	create_cube(&tran, sim, world);
 }
+void setup_scene_audio(ga_sim* sim, ga_physics_world* world, SoLoud::Soloud* audio_engine)
+{
+	// Listener
+	ga_entity* listener_ent = new ga_entity();
+	ga_listener_component* listener = new ga_listener_component(listener_ent, audio_engine, world);
+	ga_kb_move_component* listener_move_comp = new ga_kb_move_component(
+		listener_ent, k_button_k, k_button_j, k_button_i, k_button_l);
+	ga_mat4f*  listener_transform = new ga_mat4f();
+	listener_transform->make_identity();
+	listener_transform->translate({ 7, 1.5f, 0 });
+	listener_ent->set_transform(*listener_transform);
+	sim->add_entity(listener_ent);
+
+	// Audio Source 1
+	SoLoud::Wav* sfx_drums = new SoLoud::Wav();
+	sfx_drums->load(strcat(g_root_path, "/data/audio/drums.wav"));
+	ga_entity* source = new ga_entity();
+	ga_audio_component* audio_comp = new ga_audio_component(source, audio_engine, sfx_drums);
+
+	ga_mat4f* source_transform = new ga_mat4f();
+	source_transform->make_identity();
+	source_transform->translate({ -3, 1.5f, 0 });
+	source->set_transform(*source_transform);
+	sim->add_entity(source);
+	listener->register_audio_source(audio_comp);
+}
 
 
 int main(int argc, const char** argv)
@@ -225,15 +225,13 @@ int main(int argc, const char** argv)
 	camera->rotate(rotation);
 
 	// Audio Engine
-	SoLoud::Soloud audioEngine;
-	audioEngine.init();
+	SoLoud::Soloud audio_engine;
+	audio_engine.init();
 
 	// Scene
 	create_scene_wall(sim, world);
-	//create_scene_wall2(sim, world);
 	create_scene_window(sim, world);
-	//create_scene_pillar(sim, world);
-	setup_scene_audio(sim, world, &audioEngine);
+	setup_scene_audio(sim, world, &audio_engine);
 
 
 	// Main loop:
@@ -265,7 +263,7 @@ int main(int argc, const char** argv)
 	}
 
 	world->remove_all_rigid_bodies();
-	audioEngine.deinit();
+	audio_engine.deinit();
 
 	delete output;
 	delete world;

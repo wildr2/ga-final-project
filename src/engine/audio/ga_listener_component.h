@@ -49,20 +49,20 @@ public:
 class ga_listener_component : public ga_component
 {
 public:
-	ga_listener_component(class ga_entity* ent, SoLoud::Soloud* audioEngine, ga_physics_world* world);
+	ga_listener_component(class ga_entity* ent, SoLoud::Soloud* audio_engine, ga_physics_world* world);
 	virtual ~ga_listener_component();
 
 	virtual void update(struct ga_frame_params* params) override;
 
-	void registerAudioSource(ga_audio_component* source);
+	void register_audio_source(ga_audio_component* source);
 
 private:
-	void update3DAudio();
+	void update_3D_audio();
 
 	void ga_listener_component::update_visible_sound_nodes(const ga_vec3f& pos,
 		std::vector<ga_dynamic_drawcall>& drawcalls);
 
-	SoLoud::Soloud* _audioEngine;
+	SoLoud::Soloud* _audio_engine;
 	ga_physics_world* _world;
 	std::vector<ga_audio_component*> _sources; 
 	std::vector<sound_node> _sound_nodes;

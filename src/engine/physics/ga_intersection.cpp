@@ -394,6 +394,7 @@ bool ray_vs_oobb(const ga_vec3f& ray_origin, const ga_vec3f& ray_dir,
 	ga_vec3f min = oobb._center - oobb._half_vectors[0] - oobb._half_vectors[1] - oobb._half_vectors[2];
 	ga_vec3f max = oobb._center + oobb._half_vectors[0] + oobb._half_vectors[1] + oobb._half_vectors[2];
 
+	// Find time at crossings of face plane edges
 	float tmin = (min.x - O.x) / D.x;
 	float tmax = (max.x - O.x) / D.x;
 	float tymin = (min.y - O.y) / D.y;
@@ -401,6 +402,7 @@ bool ray_vs_oobb(const ga_vec3f& ray_origin, const ga_vec3f& ray_dir,
 	float tzmin = (min.z - O.z) / D.z;
 	float tzmax = (max.z - O.z) / D.z;
 
+	// Find points at crossing times
 	ga_vec3f ptmin = O + D.scale_result(tmin);
 	ga_vec3f ptmax = O + D.scale_result(tmax);
 	ga_vec3f ptymin = O + D.scale_result(tymin);
@@ -408,8 +410,8 @@ bool ray_vs_oobb(const ga_vec3f& ray_origin, const ga_vec3f& ray_dir,
 	ga_vec3f ptzmin = O + D.scale_result(tzmin);
 	ga_vec3f ptzmax = O + D.scale_result(tzmax);
 
+	// Find earliest crossing time at which the point intersects the face of the cube
 	float t = -1;
-
 	if (tmin > 0 && point_in_rect(ptmin.y, ptmin.z, min.y, min.z, max.y, max.z))
 		t = tmin < t || t < 0 ? tmin : t;
 	if (tmax > 0 && point_in_rect(ptmax.y, ptmax.z, min.y, min.z, max.y, max.z))
