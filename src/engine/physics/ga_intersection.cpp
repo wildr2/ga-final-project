@@ -429,48 +429,25 @@ bool ray_vs_oobb(const ga_vec3f& ray_origin, const ga_vec3f& ray_dir,
 		return true;
 	}
 	return false;
-
-	/*ga_oobb oobb = *reinterpret_cast<const ga_oobb*>(shape);
-	oobb._center += transform.get_translation();
-	oobb._half_vectors[0] = transform.transform_vector(oobb._half_vectors[0]);
-	oobb._half_vectors[1] = transform.transform_vector(oobb._half_vectors[1]);
-	oobb._half_vectors[2] = transform.transform_vector(oobb._half_vectors[2]);
-
-	ga_vec3f min = oobb._center - oobb._half_vectors[0] - oobb._half_vectors[1] - oobb._half_vectors[2];
-	ga_vec3f max = oobb._center + oobb._half_vectors[0] + oobb._half_vectors[1] + oobb._half_vectors[2];
-
-	float tmin = (min.x - ray_origin.x) / ray_dir.x;
-	float tmax = (max.x - ray_origin.x) / ray_dir.x;
-
-	if (tmin > tmax) std::swap(tmin, tmax);
-
-	float tymin = (min.y - ray_origin.y) / ray_dir.y;
-	float tymax = (max.y - ray_origin.y) / ray_dir.y;
-
-	if (tymin > tymax) std::swap(tymin, tymax);
-
-	if ((tmin > tymax) || (tymin > tmax))
-		return false;
-
-	if (tymin > tmin) tmin = tymin;
-	if (tymax < tmax) tmax = tymax;
-
-	float tzmin = (min.z - ray_origin.z) / ray_dir.z;
-	float tzmax = (max.z - ray_origin.z) / ray_dir.z;
-
-	if (tzmin > tzmax) std::swap(tzmin, tzmax);
-
-	if ((tmin > tzmax) || (tzmin > tmax))
-		return false;
-
-	if (tzmin > tmin) tmin = tzmin;
-	if (tzmax < tmax) tmax = tzmax;
-
-	if (tmin < 0 && tmax < 0 && tymin < 0 && tymax < 0 && tzmin < 0 && tzmax < 0)
-		return false;
-
-	return true;*/
 }
+
+bool ray_vs_plane(const ga_vec3f& ray_origin, const ga_vec3f& ray_dir,
+	const ga_shape* shape, const ga_mat4f& transform, float* dist)
+{
+	ga_plane plane = *reinterpret_cast<const ga_plane*>(shape);
+	ga_mat4f inv_tran = transform.inverse();
+	ga_vec3f O = inv_tran.transform_point(ray_origin);
+	ga_vec3f D = inv_tran.transform_vector(ray_dir);
+
+	float denom = plane._normal.dot(D);
+	if (abs(denom) > 0.0001f)
+	{
+		*dist = (plane._point - O).dot(plane._normal) / denom;
+		if (*dist >= 0) return true;
+	}
+	return false;
+}
+
 
 bool point_in_rect(float x, float y, float minx, float miny, float maxx, float maxy)
 {

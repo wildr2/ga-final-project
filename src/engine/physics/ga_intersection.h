@@ -94,5 +94,7 @@ bool ray_intersection_unimplemented(const ga_vec3f & ray_origin, const ga_vec3f 
 bool ray_vs_oobb(const ga_vec3f & ray_origin, const ga_vec3f & ray_dir,
 	const ga_shape* shape, const ga_mat4f& transform, float * dist);
 
+bool ray_vs_plane(const ga_vec3f& ray_origin, const ga_vec3f& ray_dir,
+	const ga_shape* shape, const ga_mat4f& transform, float* dist);
 
 bool point_in_rect(float x, float y, float minx, float miny, float maxx, float maxy);

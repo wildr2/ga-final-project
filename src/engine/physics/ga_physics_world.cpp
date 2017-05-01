@@ -40,6 +40,7 @@ ga_physics_world::ga_physics_world()
 	k_dispatch_table[k_shape_plane][k_shape_oobb] = oobb_vs_plane;
 	k_dispatch_table[k_shape_oobb][k_shape_plane] = oobb_vs_plane;
 	k_ray_dispatch_table[k_shape_oobb] = ray_vs_oobb;
+	k_ray_dispatch_table[k_shape_plane] = ray_vs_plane;
 
 	// Default gravity to Earth's constant.
 	_gravity = { 0.0f, -9.807f, 0.0f };

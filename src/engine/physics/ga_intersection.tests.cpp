@@ -111,4 +111,23 @@ void ga_intersection_unit_tests()
 		hit = ray_vs_oobb({ 10, 0, 0 }, { 1, 1, 0 }, &oobb_a, trans_a, &dist);
 		assert(!hit);
 	}
+
+	// Test Plane Raycast
+	{
+		ga_plane plane;
+		plane._point = { 0.0f, 0.0f, 0.0f };
+		plane._normal = { 0.0f, 1.0f, 0.0f };
+
+		ga_mat4f trans_a;
+		trans_a.make_identity();
+
+		float dist;
+		bool hit = false;
+
+		hit = ray_vs_plane({ 0, 10, 0 }, { 0, -1, 0 }, &plane, trans_a, &dist);
+		assert(hit);
+
+		hit = ray_vs_plane({ 0, 10, 0 }, { 0, 1, 0 }, &plane, trans_a, &dist);
+		assert(!hit);
+	}
 }
