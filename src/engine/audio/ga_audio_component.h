@@ -28,8 +28,6 @@ public:
 
 private:
 
-	void update3DAudio();
-
 	SoLoud::Soloud* _audioEngine;
 	int _audioHandle;
 	

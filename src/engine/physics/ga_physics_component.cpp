@@ -13,6 +13,8 @@
 
 #include "entity/ga_entity.h"
 
+//#define GA_PHYSICS_DEBUG_DRAW 1
+
 ga_physics_component::ga_physics_component(ga_entity* ent, ga_shape* shape, float mass)
 	: ga_component(ent)
 {
@@ -30,7 +32,7 @@ void ga_physics_component::update(ga_frame_params* params)
 	// First, re-sync the rigid body's transform with the entity's.
 	_body->_transform = get_entity()->get_transform();
 
-#if GA_PHYSICS_DEBUG_DRAW
+#if GA_PHYSICS_DEBUG_DRAW 1
 	ga_dynamic_drawcall draw;
 	_body->get_debug_draw(&draw);
 

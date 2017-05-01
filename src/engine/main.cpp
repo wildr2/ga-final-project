@@ -80,10 +80,10 @@ void setup_scene_audio(ga_sim* sim, ga_physics_world* world, SoLoud::Soloud* aud
 	ga_entity* listener_ent = new ga_entity();
 	ga_listener_component* listener = new ga_listener_component(listener_ent, audioEngine, world);
 	ga_kb_move_component* listener_move_comp = new ga_kb_move_component(
-		listener_ent, k_button_i, k_button_l, k_button_k, k_button_j);
+		listener_ent, k_button_k, k_button_j, k_button_i, k_button_l);
 	ga_mat4f*  listener_transform = new ga_mat4f();
 	listener_transform->make_identity();
-	listener_transform->translate({ -7, 0.5f, 0 });
+	listener_transform->translate({ 7, 1.5f, 0 });
 	listener_ent->set_transform(*listener_transform);
 	sim->add_entity(listener_ent);
 
@@ -92,27 +92,15 @@ void setup_scene_audio(ga_sim* sim, ga_physics_world* world, SoLoud::Soloud* aud
 	sfx_drums->load(strcat(g_root_path, "/data/audio/drums.wav"));
 	ga_entity* source = new ga_entity();
 	ga_audio_component* audio_comp = new ga_audio_component(source, audioEngine, sfx_drums);
-	ga_kb_move_component* source_move_comp = new ga_kb_move_component(
-		source, k_button_g, k_button_f, k_button_t, k_button_h);
+	//ga_kb_move_component* source_move_comp = new ga_kb_move_component(
+		//source, k_button_g, k_button_f, k_button_t, k_button_h);
 
 	ga_mat4f* source_transform = new ga_mat4f();
 	source_transform->make_identity();
-	source_transform->translate({ 3, 0.5f, 0 });
+	source_transform->translate({ -3, 1.5f, 0 });
 	source->set_transform(*source_transform);
 	sim->add_entity(source);
 	listener->registerAudioSource(audio_comp);
-
-	// Audio Source 2
-	/*SoLoud::Wav sfx_flute;
-	sfx_flute.load("flute.wav");
-	ga_entity source2;
-	ga_audio_component audio_comp2(&source2, &audioEngine, &sfx_flute);
-	ga_mat4f source2_transform;
-	source2_transform.make_identity();
-	source2_transform.translate({ 5, 0.5f, 0 });
-	source2.set_transform(source2_transform);
-	sim->add_entity(&source2);
-	listener.registerAudioSource(&audio_comp2);*/
 }
 
 ga_entity* create_cube(ga_mat4f* transform, ga_sim* sim, ga_physics_world* world)
@@ -133,6 +121,74 @@ ga_entity* create_cube(ga_mat4f* transform, ga_sim* sim, ga_physics_world* world
 	sim->add_entity(cube);
 	return cube;
 }
+void create_scene_wall(ga_sim* sim, ga_physics_world* world)
+{
+	ga_mat4f tran;
+	for (int i = 0; i < 3; ++i) {
+		tran.make_scaling(1);
+		tran.translate({ 0, i * 2.0f, 0 });
+		create_cube(&tran, sim, world);
+
+		tran.make_scaling(1);
+		tran.translate({ 0, i * 2.0f, -2 });
+		create_cube(&tran, sim, world);
+
+		tran.make_scaling(1);
+		tran.translate({ 0, i * 2.0f, -4 });
+		create_cube(&tran, sim, world);
+
+		tran.make_scaling(1);
+		tran.translate({ 0, i * 2.0f, -6 });
+		create_cube(&tran, sim, world);
+
+		tran.make_scaling(1);
+		tran.translate({ 0, i * 2.0f, -8 });
+		create_cube(&tran, sim, world);
+
+		tran.make_scaling(1);
+		tran.translate({ 0, i * 2.0f, -10 });
+		create_cube(&tran, sim, world);
+
+		tran.make_scaling(1);
+		tran.translate({ -2, i * 2.0f, -8 });
+		create_cube(&tran, sim, world);
+	}
+}
+void create_scene_window(ga_sim* sim, ga_physics_world* world)
+{
+	ga_mat4f tran;
+	tran.make_scaling(1);
+	tran.translate({ -4, 0, -8 });
+	create_cube(&tran, sim, world);
+
+	tran.make_scaling(1);
+	tran.translate({ -6, 0, -8 });
+	create_cube(&tran, sim, world);
+
+	tran.make_scaling(1);
+	tran.translate({ -6, 2, -8 });
+	create_cube(&tran, sim, world);
+
+	tran.make_scaling(1);
+	tran.translate({ -6, 4, -8 });
+	create_cube(&tran, sim, world);
+
+	tran.make_scaling(1);
+	tran.translate({ -4, 4, -8 });
+	create_cube(&tran, sim, world);
+}
+void create_scene_pillar(ga_sim* sim, ga_physics_world* world)
+{
+	ga_mat4f tran;
+	tran.make_scaling(1);
+	tran.translate({ 3, 0, 0 });
+	create_cube(&tran, sim, world);
+
+	tran.make_scaling(1);
+	tran.translate({ 3, 2, 0 });
+	create_cube(&tran, sim, world);
+}
+
 
 int main(int argc, const char** argv)
 {
@@ -148,9 +204,9 @@ int main(int argc, const char** argv)
 	ga_output* output = new ga_output(input->get_window());
 
 	// Create camera.
-	ga_camera* camera = new ga_camera({ 0.0f, 7.0f, -20.0f });
+	ga_camera* camera = new ga_camera({ 0.0f, 7.0f, 20.0f });
 	ga_quatf rotation;
-	rotation.make_axis_angle(ga_vec3f::y_vector(), ga_degrees_to_radians(0));
+	rotation.make_axis_angle(ga_vec3f::y_vector(), ga_degrees_to_radians(180));
 	camera->rotate(rotation);
 	rotation.make_axis_angle(ga_vec3f::x_vector(), ga_degrees_to_radians(15.0f));
 	camera->rotate(rotation);
@@ -160,72 +216,10 @@ int main(int argc, const char** argv)
 	audioEngine.init();
 
 	// Scene
-	ga_mat4f tran;
-
-	for (int i = 0; i < 3; ++i) {
-		tran.make_scaling(1);
-		tran.translate({ 0, i * 2.0f, 0 });
-		create_cube(&tran, sim, world);
-
-		tran.make_scaling(1);
-		tran.translate({ 0, i * 2.0f, 2 });
-		create_cube(&tran, sim, world);
-
-		tran.make_scaling(1);
-		tran.translate({ 0, i * 2.0f, 4 });
-		create_cube(&tran, sim, world);
-
-		tran.make_scaling(1);
-		tran.translate({ 0, i * 2.0f, 6 });
-		create_cube(&tran, sim, world);
-
-		tran.make_scaling(1);
-		tran.translate({ 0, i * 2.0f, 8 });
-		create_cube(&tran, sim, world);
-
-		tran.make_scaling(1);
-		tran.translate({ 0, i * 2.0f, 10 });
-		create_cube(&tran, sim, world);
-
-		tran.make_scaling(1);
-		tran.translate({ 2, i * 2.0f, 8 });
-		create_cube(&tran, sim, world);
-	}
-
-	tran.make_scaling(1);
-	tran.translate({ 4, 0, 8 });
-	create_cube(&tran, sim, world);
-
-	tran.make_scaling(1);
-	tran.translate({ 6, 0, 8 });
-	create_cube(&tran, sim, world);
-
-	/*tran.make_scaling(1);
-	tran.translate({ 2, 0, 2 });
-	create_cube(&tran, sim, world);
-
-	tran.make_scaling(1);
-	tran.translate({ 2, 0, 4 });
-	create_cube(&tran, sim, world);
-
-	tran.make_scaling(1);
-	tran.translate({ 0, 0, 4 });
-	create_cube(&tran, sim, world);*/
-
-
+	create_scene_wall(sim, world);
+	create_scene_window(sim, world);
+	//create_scene_pillar(sim, world);
 	setup_scene_audio(sim, world, &audioEngine);
-
-	
-
-	// Floor
-	/*ga_entity floor;
-	ga_plane floor_plane;
-	floor_plane._point = { 0.0f, 0.0f, 0.0f };
-	floor_plane._normal = { 0.0f, 1.0f, 0.0f };
-	ga_physics_component floor_collider(&floor, &floor_plane, 0.0f);
-	floor_collider.get_rigid_body()->make_static();
-	world->add_rigid_body(floor_collider.get_rigid_body());
-	sim->add_entity(&floor);*/
 
 
 	// Main loop:

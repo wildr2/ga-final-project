@@ -112,7 +112,7 @@ void ga_oobb::get_debug_draw(const ga_mat4f& transform, ga_dynamic_drawcall* dra
 		drawcall->_indices.push_back(indices[i]);
 	}
 
-	drawcall->_color = { 0.0f, 1.0f, 0.0f };
+	drawcall->_color = { 0.0f, 0.0f, 0.0f };
 	drawcall->_draw_mode = GL_LINES;
 	drawcall->_transform = transform;
 	drawcall->_material = nullptr;

@@ -22,15 +22,6 @@ ga_audio_component::ga_audio_component(ga_entity* ent, SoLoud::Soloud* audioEngi
 	wav->set3dAttenuation(SoLoud::AudioSource::LINEAR_DISTANCE, 1);
 
 	_audioHandle = audioEngine->play3d(*wav, 0, 0, 0);
-	//update3DAudio();
-
-	/*audioEngine->stop(sfx_drumsHandle);
-	audioEngine->setPause(sfx_drumsHandle, true);
-	audioEngine->setPause(sfx_drumsHandle, false);
-	audioEngine->setVolume(sfx_drumsHandle, 1);*/
-	//audioEngine->setVolume(sfx_drumsHandle, 1.0f);
-	//audioEngine->set3dListenerPosition(5, 0, 0);
-	//audioEngine->update3dAudio();
 }
 
 ga_audio_component::~ga_audio_component()
@@ -50,15 +41,5 @@ void ga_audio_component::update(ga_frame_params* params)
 	params->_dynamic_drawcalls.push_back(drawcall);
 	params->_dynamic_drawcall_lock.clear(std::memory_order_release);
 #endif
-}
-
-void ga_audio_component::update3DAudio()
-{
-	// Update source position (for distance attenuation / panning)
-	ga_mat4f trans = get_entity()->get_transform();
-	_audioEngine->set3dSourcePosition(_audioHandle,
-		trans.get_translation().x,
-		trans.get_translation().y,
-		trans.get_translation().z);
 }
 

@@ -19,7 +19,8 @@
 #include <queue>
 #include <unordered_map>
 
-#define MAX_AUDIO_DIST 20.0f
+#define MAX_AUDIO_DIST 40.0f
+#define MAX_LOWPASS_CUTOFF 10000
 #define DEBUG_DRAW_AUDIO 1
 #define DEBUG_DRAW_SOUND_NODE_EDGES 0
 
@@ -33,11 +34,13 @@ public:
 	}
 
 	void propogate(ga_audio_component* source, float dist);
+	ga_vec3f get_incoming_dir(ga_audio_component* source);
 
 	int _id;
 	ga_vec3f _pos;
 	std::vector<sound_node*> _neighbors;
-	std::map<ga_audio_component*, float> _propogation;
+	std::map<ga_audio_component*, float> _distance;
+	std::map<ga_audio_component*, sound_node*> _prev; 
 };
 
 /*
