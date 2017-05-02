@@ -13,10 +13,13 @@
 #include "graphics/ga_geometry.h"
 #include "entity/ga_entity.h"
 
+
 ga_audio_component::ga_audio_component(ga_entity* ent, SoLoud::Soloud* audio_engine, SoLoud::Wav* wav) : ga_component(ent)
 {
 	_audio_engine = audio_engine;
 
+	// Start playing looping wav - once registered with a ga_audio_listener, the source position in SoLoud will
+	//  be updated by the listener
 	wav->setLooping(true);
 	wav->set3dMinMaxDistance(1, MAX_AUDIO_DIST);
 	wav->set3dAttenuation(SoLoud::AudioSource::LINEAR_DISTANCE, 1);
@@ -32,7 +35,7 @@ void ga_audio_component::update(ga_frame_params* params)
 {	
 	float dt = std::chrono::duration_cast<std::chrono::duration<float>>(params->_delta_time).count();
 
-	// Visualization
+	// Visualize the entity location
 #if DEBUG_DRAW_AUDIO
 	ga_dynamic_drawcall drawcall;
 	draw_debug_sphere(0.2f, get_entity()->get_transform(), &drawcall, { 0, 1, 0 });

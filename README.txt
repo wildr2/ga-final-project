@@ -1,14 +1,22 @@
 
 
+BUILDING
+
+    Run setup_win64.bat
+    Add existing files form src/3rdparty/soloud-master/src/required to project
+    Add include directory src/3rdparty/soloud-master/include (in project properties)
+
+    An existing build is also available in build.zip
+
 DEMO
 
-    
-    
-
+    Use the WASD and arrow keys to control the camera.
+    Use the IJKL keys to move the listener (blue sphere).
+    The static sound source is the green sphere.
 
 CODE
 
-    new (1st party):
+    New (1st party):
         ga_audio_component
             - component for playing a wav file on loop at an entities 3D position
         ga_kb_move_component
@@ -18,7 +26,7 @@ CODE
               should play; based on the listener and audio components' entitiy positions relative to static colliders in ga_physics_world 
 
 
-    modified:
+    Modified:
         main
             - scene creation
             - SoLoud initialization 

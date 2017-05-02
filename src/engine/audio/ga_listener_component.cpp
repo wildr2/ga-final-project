@@ -7,12 +7,13 @@
 ** This file is distributed under the MIT License. See LICENSE.txt.
 */
 
+#include <iostream>
+
 #include "ga_listener_component.h"
 #include "graphics/ga_debug_geometry.h"
 #include "graphics/ga_geometry.h"
 #include "entity/ga_entity.h"
 #include "soloud_biquadresonantfilter.h"
-#include <iostream>
 
 
 ga_listener_component::ga_listener_component(ga_entity* ent, SoLoud::Soloud* audio_engine,
@@ -70,6 +71,28 @@ ga_listener_component::~ga_listener_component()
 {
 }
 
+void ga_listener_component::register_audio_source(ga_audio_component* source)
+{
+	_sources.push_back(source);
+
+	ga_vec3f source_pos = source->get_entity()->get_transform().get_translation();
+
+	// Find sound nodes in LOS of source,
+	//   and calculate distance from source at connected sound nodes.
+	for (int i = 0; i < _sound_nodes.size(); ++i)
+	{
+		ga_vec3f v = _sound_nodes[i]._pos - source_pos;
+		float dist = v.mag();
+
+		if (!_world->raycast_all(source_pos, v.normal(), NULL, dist))
+		{
+			// Sound node in LOS
+			_sound_nodes[i].propogate(source, dist);
+		}
+	}
+}
+
+
 void ga_listener_component::update(ga_frame_params* params)
 {	
 	ga_vec3f pos = get_entity()->get_transform().get_translation();
@@ -77,72 +100,79 @@ void ga_listener_component::update(ga_frame_params* params)
 	std::vector<ga_dynamic_drawcall> drawcalls;
 
 	update_visible_sound_nodes(pos, drawcalls);
+	update_sources(drawcalls);
 
-	// Source occlusion
+	// Udpate panning / distance attenuation
+	update_3D_audio();
+
+	
+#if DEBUG_DRAW_AUDIO
+	debug_draw_listener(drawcalls);
+	debug_draw_soundnodes(_sources[0], drawcalls);
+#endif
+#if DEBUG_DRAW_SOUND_NODE_EDGES
+	debug_draw_soundnode_edges(_sources[0], &drawcalls);
+#endif
+
+	// Draw
+	if (drawcalls.size() > 0)
+	{
+		while (params->_dynamic_drawcall_lock.test_and_set(std::memory_order_acquire)) {}
+		for (int i = 0; i < drawcalls.size(); ++i)
+		{
+			params->_dynamic_drawcalls.push_back(drawcalls[i]);
+		}
+		params->_dynamic_drawcall_lock.clear(std::memory_order_release);
+	}
+}
+
+void ga_listener_component::update_3D_audio()
+{
+	ga_mat4f trans = get_entity()->get_transform();
+	_audio_engine->set3dListenerPosition(
+		trans.get_translation().x,
+		trans.get_translation().y,
+		trans.get_translation().z);
+
+	_audio_engine->update3dAudio();
+}
+
+void ga_listener_component::update_visible_sound_nodes(const ga_vec3f& pos,
+	std::vector<ga_dynamic_drawcall>& drawcalls)
+{
+	_visible_sound_nodes.clear();
+
+	// Find visible sound nodes
+	for (int i = 0; i < _sound_nodes.size(); ++i)
+	{
+		ga_vec3f v = _sound_nodes[i]._pos - pos;
+		if (!_world->raycast_all(pos, v.normal(), NULL, v.mag()))
+		{
+			// Sound node in LOS
+			_visible_sound_nodes.push_back(&_sound_nodes[i]);
+		}
+	}
+}
+
+void ga_listener_component::update_sources(std::vector<ga_dynamic_drawcall>& drawcalls)
+{
+	ga_vec3f pos = get_entity()->get_transform().get_translation();
+
+	// Update registered audio source positions and filtering
 	for (int i = 0; i < _sources.size(); ++i)
 	{
-		// Determine if occluded
+		// Determine if source/listener is directly occluded
 		ga_vec3f source_pos = _sources[i]->get_entity()->get_transform().get_translation();
 		ga_vec3f to_source = source_pos - pos;
 		bool occluded = _world->raycast_all(pos, to_source.normal(), NULL, to_source.mag());
 
 		// Set source position (virtual source position if occluded)
-		int handle = _sources[i]->getAudioHandle();
+		int handle = _sources[i]->get_audio_handle();
 		float lowpass_cutoff = MAX_LOWPASS_CUTOFF;
 		if (occluded)
 		{
-			ga_vec3f virtual_source = { MAX_AUDIO_DIST, MAX_AUDIO_DIST, MAX_AUDIO_DIST };
-			ga_vec3f hear_dir = { 0, 0, 0 };
-			float min_dist = MAX_AUDIO_DIST;
-			for (int j = 0; j < _visible_sound_nodes.size(); ++j)
-			{
-				ga_vec3f node_to_listener = _visible_sound_nodes[j]->_pos - pos;
-				float dist_from_source = _visible_sound_nodes[j]->_distance[_sources[i]] +
-					node_to_listener.mag();
-
-				// Find influence of incoming sound from this point in the environment (sound node)
-				//   based on the distance of the node form the source, and the direction of the sound
-				//   at the node
-				float str = std::max(0.0f, (dist_from_source - MAX_AUDIO_DIST) / -MAX_AUDIO_DIST);
-				float directness = node_to_listener.normal().dot(
-					_visible_sound_nodes[j]->get_incoming_dir(_sources[i]));
-				directness = 1 - (directness + 1) / 2.0f;
-				str *= directness;
-
-				// Update hear direction
-				ga_vec3f dir = node_to_listener.normal().scale_result(str);
-				hear_dir += dir;
-
-				// Update minimum source to listener distance
-				if (dist_from_source < min_dist)
-				{
-					min_dist = dist_from_source;
-				}
-
-#if DEBUG_DRAW_AUDIO
-				if (_visible_sound_nodes.size() > 0)
-				{
-					// Visualize visible node LOS
-					ga_dynamic_drawcall drawcall;
-					ga_vec3f color = { 1 - str, str, 0 };
-					draw_debug_line(pos, _visible_sound_nodes[j]->_pos, &drawcall, color);
-					drawcalls.push_back(drawcall);
-				}
-#endif
-			}
-
-			if (hear_dir.mag() == 0)
-			{
-				// hear_dir is <0,0,0> when the listener is further than MAX_AUDIO_DIST
-				//  away from the source, or is at the same position of the source (in which
-				//  cases direction does not matter, but <0,0,0> is not a valid direction).
-				hear_dir = { 1, 0, 0 };
-			}
-			else
-			{
-				hear_dir.normalize();
-			}
-			virtual_source = pos + hear_dir.scale_result(min_dist);
+			float min_dist; 
+			ga_vec3f virtual_source = calc_virtual_source_pos(_sources[i], &min_dist, drawcalls);
 
 			// Use virtual source position
 			_audio_engine->set3dSourcePosition(handle,
@@ -152,7 +182,7 @@ void ga_listener_component::update(ga_frame_params* params)
 			//   and the direct (occluded) path => a lower cutoff frequency
 			float path_extension = std::pow((to_source.mag() / min_dist), 2.0f);
 			lowpass_cutoff = path_extension * MAX_LOWPASS_CUTOFF;
-			
+
 
 #if DEBUG_DRAW_AUDIO
 			if (_visible_sound_nodes.size() > 0)
@@ -183,30 +213,90 @@ void ga_listener_component::update(ga_frame_params* params)
 		// Apply lowpass
 		_audio_engine->setFilterParameter(0, 0, SoLoud::BiquadResonantFilter::FREQUENCY, lowpass_cutoff);
 		std::cout << "lowpass cutoff: " << lowpass_cutoff << std::endl;
-		
+
 #if DEBUG_DRAW_AUDIO
 		// Visualize raycast
 		ga_dynamic_drawcall drawcall;
-		float str = occluded ? 0 : ((source_pos-pos).mag() - MAX_AUDIO_DIST) / -MAX_AUDIO_DIST;
+		float str = occluded ? 0 : ((source_pos - pos).mag() - MAX_AUDIO_DIST) / -MAX_AUDIO_DIST;
 		ga_vec3f color = { 1 - str, str, 0 };
 		draw_debug_line(pos, source_pos, &drawcall, color);
 		drawcalls.push_back(drawcall);
 #endif
 	}
-	
+}
 
-	// Udpate panning / distance attenuation
-	update_3D_audio();
+ga_vec3f ga_listener_component::calc_virtual_source_pos(ga_audio_component* source, float* min_dist,
+	std::vector<ga_dynamic_drawcall>& drawcalls)
+{
+	ga_vec3f pos = get_entity()->get_transform().get_translation();
 
-	
+	//ga_vec3f virtual_source = { MAX_AUDIO_DIST, MAX_AUDIO_DIST, MAX_AUDIO_DIST };
+	ga_vec3f hear_dir = { 0, 0, 0 };
+	*min_dist = MAX_AUDIO_DIST;
+
+	for (int j = 0; j < _visible_sound_nodes.size(); ++j)
+	{
+		ga_vec3f node_to_listener = _visible_sound_nodes[j]->_pos - pos;
+		float dist_from_source = _visible_sound_nodes[j]->_distance[source] +
+			node_to_listener.mag();
+
+		// Find influence of incoming sound from this point in the environment (sound node)
+		//   based on the distance of the node form the source, and the direction of the sound
+		//   at the node
+		float str = std::max(0.0f, (dist_from_source - MAX_AUDIO_DIST) / -MAX_AUDIO_DIST);
+		float directness = node_to_listener.normal().dot(
+			_visible_sound_nodes[j]->get_incoming_dir(source));
+		directness = 1 - (directness + 1) / 2.0f;
+		str *= directness;
+
+		// Update hear direction
+		ga_vec3f dir = node_to_listener.normal().scale_result(str);
+		hear_dir += dir;
+
+		// Update minimum source to listener distance
+		if (dist_from_source < *min_dist)
+		{
+			*min_dist = dist_from_source;
+		}
+
 #if DEBUG_DRAW_AUDIO
-	// Visualize listener
+		if (_visible_sound_nodes.size() > 0)
+		{
+			// Visualize visible node LOS
+			ga_dynamic_drawcall drawcall;
+			ga_vec3f color = { 1 - str, str, 0 };
+			draw_debug_line(pos, _visible_sound_nodes[j]->_pos, &drawcall, color);
+			drawcalls.push_back(drawcall);
+		}
+#endif
+	}
+
+	if (hear_dir.mag() == 0)
+	{
+		// hear_dir is <0,0,0> when the listener is further than MAX_AUDIO_DIST
+		//  away from the source, or is at the same position of the source (in which
+		//  cases direction does not matter, but <0,0,0> is not a valid direction).
+		hear_dir = { 1, 0, 0 };
+	}
+	else
+	{
+		hear_dir.normalize();
+	}
+
+	return pos + hear_dir.scale_result(*min_dist);
+}
+
+
+void ga_listener_component::debug_draw_listener(std::vector<ga_dynamic_drawcall>& drawcalls)
+{
 	ga_dynamic_drawcall drawcall;
 	draw_debug_sphere(0.2f, get_entity()->get_transform(), &drawcall, { 0.4f, 0.549f, 1 });
 	drawcalls.push_back(drawcall);
+}
 
-	// Visualize sound nodes
-	ga_audio_component* vis_source = _sources[0];
+void ga_listener_component::debug_draw_soundnodes(ga_audio_component* vis_source, 
+	std::vector<ga_dynamic_drawcall>& drawcalls)
+{
 	for (int i = 0; i < _sound_nodes.size(); ++i)
 	{
 		// Find distance from source for node1
@@ -224,8 +314,11 @@ void ga_listener_component::update(ga_frame_params* params)
 		draw_debug_star(0.1f, _sound_nodes[i]._pos, &drawcall, color);
 		drawcalls.push_back(drawcall);
 	}
+}
 
-#if DEBUG_DRAW_SOUND_NODE_EDGES
+void ga_listener_component::debug_draw_soundnode_edges(ga_audio_component* vis_source,
+	std::vector<ga_dynamic_drawcall>& drawcalls)
+{
 	bool* visited = new bool[_sound_nodes.size()];
 	for (int i = 0; i < _sound_nodes.size(); ++i)
 	{
@@ -265,75 +358,13 @@ void ga_listener_component::update(ga_frame_params* params)
 		}
 		visited[_sound_nodes[i]._id] = true;
 	}
-#endif
-#endif
-
-	// Draw
-	if (drawcalls.size() > 0)
-	{
-		while (params->_dynamic_drawcall_lock.test_and_set(std::memory_order_acquire)) {}
-		for (int i = 0; i < drawcalls.size(); ++i)
-		{
-			params->_dynamic_drawcalls.push_back(drawcalls[i]);
-		}
-		params->_dynamic_drawcall_lock.clear(std::memory_order_release);
-	}
 }
-
-void ga_listener_component::register_audio_source(ga_audio_component* source)
-{
-	_sources.push_back(source);
-
-	ga_vec3f source_pos = source->get_entity()->get_transform().get_translation();
-
-	// Find sound nodes in LOS of source,
-	//   and calculate distance from source at connected sound nodes.
-	for (int i = 0; i < _sound_nodes.size(); ++i)
-	{
-		ga_vec3f v = _sound_nodes[i]._pos - source_pos;
-		float dist = v.mag();
-
-		if (!_world->raycast_all(source_pos, v.normal(), NULL, dist))
-		{
-			// Sound node in LOS
-			_sound_nodes[i].propogate(source, dist);
-		}
-	}
-}
-
-void ga_listener_component::update_3D_audio()
-{
-	// Update source position (for distance attenuation / panning)
-	ga_mat4f trans = get_entity()->get_transform();
-	_audio_engine->set3dListenerPosition(
-		trans.get_translation().x,
-		trans.get_translation().y,
-		trans.get_translation().z);
-
-	_audio_engine->update_3D_audio();
-}
-
-void ga_listener_component::update_visible_sound_nodes(const ga_vec3f& pos,
-	std::vector<ga_dynamic_drawcall>& drawcalls)
-{
-	_visible_sound_nodes.clear();
-
-	// Find visible sound nodes
-	for (int i = 0; i < _sound_nodes.size(); ++i)
-	{
-		ga_vec3f v = _sound_nodes[i]._pos - pos;
-		if (!_world->raycast_all(pos, v.normal(), NULL, v.mag()))
-		{
-			// Sound node in LOS
-			_visible_sound_nodes.push_back(&_sound_nodes[i]);
-		}
-	}
-}
-
 
 
 ga_vec3f sound_node::get_incoming_dir(ga_audio_component* source)
 {
+	// direction from previous node in path, or the source itself if this is the first
+	// node in the path
 	sound_node* prev = _prev[source];
 	if (prev == NULL)
 	{
@@ -342,6 +373,7 @@ ga_vec3f sound_node::get_incoming_dir(ga_audio_component* source)
 	}
 	return (_pos - prev->_pos).normal();
 }
+
 void sound_node::propogate(ga_audio_component* source, float initial_dist)
 {	
 	ga_vec3f source_pos = source->get_entity()->get_transform().get_translation();
@@ -349,6 +381,7 @@ void sound_node::propogate(ga_audio_component* source, float initial_dist)
 	std::queue<std::pair<sound_node*, sound_node*>> open_list; // node, prev node
 	open_list.push(std::pair<sound_node*, sound_node*>(this, NULL));
 
+	// Propogate in breadth first fashion
 	while (open_list.size() > 0)
 	{
 		sound_node* node = open_list.front().first;
@@ -361,12 +394,16 @@ void sound_node::propogate(ga_audio_component* source, float initial_dist)
 		else
 		{
 			ga_vec3f prev_to_node = node->_pos - prev->_pos;
-			sound_node* prev2 = prev->_prev[source];
-			ga_vec3f prev2_pos = prev2 == NULL ? source_pos : prev2->_pos;
-			ga_vec3f prev2_to_prev = prev->_pos - prev2_pos;
-
 			dist = prev->_distance[source] + prev_to_node.mag();
 			
+
+			// Lengthen distance by amount of bend in path (to increase attenuation for sound
+			// going around corners...
+
+			/*sound_node* prev2 = prev->_prev[source];
+			ga_vec3f prev2_pos = prev2 == NULL ? source_pos : prev2->_pos;
+			ga_vec3f prev2_to_prev = prev->_pos - prev2_pos;*/
+
 			// Value between 0 and 1, where 1 is most bend from previous path
 			/*float bend = 1 - (1 + prev_to_node.normal().dot(prev2_to_prev.normal())) / 2.0f;
 			dist += bend * MAX_AUDIO_DIST;*/
